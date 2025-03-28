@@ -1,0 +1,10 @@
+﻿{
+    "profiles": {
+      "DP_S_Marketplace (Package)": {
+        "commandName": "MsixPackage"
+      },
+      "DP_S_Marketplace (Unpackaged)": {
+        "commandName": "Project"
+      }
+    }
+}
