@@ -42,6 +42,11 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         return ParseFileTypeUsage(result);
     }
 
+    /// <summary>
+    /// 解析 du 命令的输出，返回文件类型使用情况
+    /// </summary>
+    /// <param name="commandOutput"></param>
+    /// <returns></returns>
     private static List<FileTypeUsage> ParseFileTypeUsage(string commandOutput)
     {
         var fileTypeUsages = new Dictionary<string, long>();
@@ -80,10 +85,22 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
 
         return result;
     }
+
+    /// <summary>
+    /// 将字节大小转换为 GB 单位
+    /// </summary>
+    /// <param name="sizeInBytes"></param>
+    /// <returns></returns>
     private static double ConvertToGB(long sizeInBytes)
     {
         return Math.Round( sizeInBytes / (1024.0 * 1024.0 * 1024.0),6);
     }
+
+    /// <summary>
+    /// 根据文件路径获取文件类型
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <returns></returns>
     private static string GetFileType(string filePath)
     {
         var extension = System.IO.Path.GetExtension(filePath).ToLower();
@@ -108,9 +125,6 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         }
     }
 
-
-
-
     public ObservableCollection<FileSystemUsageModel> GetDiskUsages()
     {
         var globalVariables = GlobalVariables.Instance;
@@ -132,7 +146,12 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         return ParseDiskUsage(result);
     }
 
-    private ObservableCollection<FileSystemUsageModel> ParseDiskUsage(string dfOutput)
+    /// <summary>
+    /// 解析 df 命令的输出，返回文件系统使用情况
+    /// </summary>
+    /// <param name="dfOutput"></param>
+    /// <returns></returns>
+    private static ObservableCollection<FileSystemUsageModel> ParseDiskUsage(string dfOutput)
     {
         var lines = dfOutput.Split('\n').Skip(1); // Skip the header line
         var fileSystemUsages = new List<FileSystemUsageModel>();
@@ -163,7 +182,12 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         return new ObservableCollection<FileSystemUsageModel>(fileSystemUsages);
     }
 
-    private long ParseSize(string size)
+    /// <summary>
+    /// 解析文件大小字符串，返回以字节为单位的大小
+    /// </summary>
+    /// <param name="size"></param>
+    /// <returns></returns>
+    private static long ParseSize(string size)
     {
         if (string.IsNullOrWhiteSpace(size))
         {
@@ -331,14 +355,30 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         }
         using var client = new SshClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
         client.Connect();
-        var command = client.CreateCommand($"cat {DownloadedProjectsFilePath}");
+
+        // 检查文件是否存在，存在则读取内容，否则返回空字符串
+        var command = client.CreateCommand($"if [ -f \"{DownloadedProjectsFilePath}\" ]; then cat \"{DownloadedProjectsFilePath}\"; else echo ''; fi");
         var result = command.Execute();
         client.Disconnect();
 
-        return await Json.ToObjectAsync<List<ProjectInfo>>(result);
-
+        if (string.IsNullOrWhiteSpace(result))
+        {
+            // 文件不存在或内容为空，返回空的 List<ProjectInfo>
+            return [];
+        }
+        else
+        {
+            // 文件存在且有内容，反序列化 JSON
+            return await Json.ToObjectAsync<List<ProjectInfo>>(result);
+        }
     }
 
+    /// <summary>
+    /// 将下载的项目名称保存到 JSON 文件中
+    /// </summary>
+    /// <param name="sftp"></param>
+    /// <param name="projectInfos"></param>
+    /// <returns></returns>
     private static async Task SaveDownloadedProjectNames(SftpClient sftp, IEnumerable<ProjectInfo> projectInfos)
     {
         if (projectInfos == null || !projectInfos.Any())
