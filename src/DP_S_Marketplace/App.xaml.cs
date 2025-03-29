@@ -67,6 +67,7 @@ public partial class App : Application
             services.AddSingleton<IActivationService, ActivationService>();
             services.AddSingleton<IPageService, PageService>();
             services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<IScriptMarketplaceService, ScriptMarketplaceService>();
 
             // Core Services
             services.AddSingleton<IFileService, FileService>();
@@ -84,7 +85,9 @@ public partial class App : Application
             services.AddTransient<MainPage>();
             services.AddTransient<ShellPage>();
             services.AddTransient<ShellViewModel>();
-
+            // HttpClient
+            services.AddHttpClient();
+            services.AddSingleton<IApiService, HttpService>();
             // Configuration
             services.Configure<LocalSettingsOptions>(context.Configuration.GetSection(nameof(LocalSettingsOptions)));
         }).

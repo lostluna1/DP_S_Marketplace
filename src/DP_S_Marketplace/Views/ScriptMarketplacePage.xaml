@@ -4,9 +4,110 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:table="using:WinUI.TableView"
     mc:Ignorable="d">
 
     <Grid x:Name="ContentArea">
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <InfoBar
+            Title="提示"
+            Grid.Row="0"
+            Width="400"
+            HorizontalAlignment="Left"
+            IsOpen="True"
+            Message="右键点击行可查看该脚本的配置信息"
+            Severity="Informational" />
+        <AutoSuggestBox
+            x:Name="SearchBox"
+            Grid.Row="0"
+            Width="200"
+            Height="35"
+            HorizontalAlignment="Right"
+            PlaceholderText="搜索脚本"
+            QueryIcon="Find" />
+        <Border Grid.Row="1" Style="{ThemeResource BorderPanel}">
+            <table:TableView
+                x:Name="ServerTableView"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                ItemsSource="{x:Bind ViewModel.ProjectInfos}"
+                SelectedItem="{x:Bind ViewModel.SelectedProjectInfo, Mode=OneTime}"
+                SelectionMode="Single"
+                SelectionUnit="Row">
+                <table:TableView.Columns>
+                    <table:TableViewTemplateColumn Width="*" Header="脚本名称">
+                        <table:TableViewTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image
+                                        Width="28"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Source="ms-appx:///Assets/YosinLogo_sb.ico" />
+                                    <TextBlock
+                                        Margin="5,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="{Binding ProjectName}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </table:TableViewTemplateColumn.CellTemplate>
+                    </table:TableViewTemplateColumn>
+                    <table:TableViewTextColumn
+                        Width="*"
+                        Binding="{Binding ProjectAuthor}"
+                        Header="作者" />
+                    <table:TableViewTextColumn
+                        Width="*"
+                        Binding="{Binding ProjectVersion}"
+                        Header="版本号" />
+
+                    <table:TableViewTemplateColumn Width="auto" Header="">
+                        <table:TableViewTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal">
+                                    <HyperlinkButton HorizontalAlignment="Center">
+                                        <StackPanel
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Orientation="Horizontal">
+                                            <SymbolIcon Symbol="Download" />
+                                            <TextBlock Margin="5,0,0,0" Text="下载到服务端" />
+                                        </StackPanel>
+                                    </HyperlinkButton>
+                                    <!--<HyperlinkButton
+                                        Margin="0,8,0,0"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Click="Button_Click"
+                                        Style="{StaticResource AccentButtonStyle}">
+                                        <StackPanel
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Orientation="Horizontal">
+                                            <SymbolIcon Symbol="Download" />
+                                            <TextBlock Margin="5,0,0,0" Text="下载到服务端" />
+                                        </StackPanel>
+                                    </HyperlinkButton>-->
+                                </StackPanel>
+                            </DataTemplate>
+                        </table:TableViewTemplateColumn.CellTemplate>
+                    </table:TableViewTemplateColumn>
+
+
+                </table:TableView.Columns>
+                <table:TableView.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="查看配置" />
+                    </MenuFlyout>
+                </table:TableView.ContextFlyout>
+            </table:TableView>
+        </Border>
+
     </Grid>
 </Page>

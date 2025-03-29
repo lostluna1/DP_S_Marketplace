@@ -1,10 +1,8 @@
 ﻿using DP_S_Marketplace.Contracts.Services;
-using DP_S_Marketplace.ViewModels;
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
-using Microsoft.Windows.AppNotifications;
 
 namespace DP_S_Marketplace.Activation;
 
@@ -40,10 +38,18 @@ public class AppNotificationActivationHandler : ActivationHandler<LaunchActivate
         ////         _navigationService.NavigateTo(typeof(SettingsViewModel).FullName!);
         ////     });
         //// }
-
+        // 写一个根据时间判断当前是上午还是下午还是晚上的变量
+        var time = DateTime.Now;
+        var timeOfDay = time.Hour switch
+        {
+            >= 6 and < 12 => "上午",
+            >= 12 and < 18 => "下午",
+            _ => "晚上"
+        };
+     
         App.MainWindow.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
-            App.MainWindow.ShowMessageDialogAsync("TODO: Handle notification activations.", "Notification Activation");
+            App.MainWindow.ShowMessageDialogAsync($"/*{timeOfDay}*/好, 欢迎使用DP-S插件市场", "Notification Activation");
         });
 
         await Task.CompletedTask;

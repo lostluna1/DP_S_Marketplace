@@ -61,7 +61,7 @@
   <data name="AppDisplayName" xml:space="preserve">
     <value>DP_S_Marketplace</value>
   </data>
-	<data name="AppDescription" xml:space="preserve">
+  <data name="AppDescription" xml:space="preserve">
 		<value>DP_S_Marketplace</value>
   	</data>
   <data name="Shell_Main.Content" xml:space="preserve">
@@ -89,10 +89,10 @@
     <value>TODO: Replace with your app description.</value>
   </data>
   <data name="SettingsPage_PrivacyTermsLink.Content" xml:space="preserve">
-    <value>Privacy Statement</value>
+    <value>DP-S Document</value>
   </data>
   <data name="SettingsPage_PrivacyTermsLink.NavigateUri" xml:space="preserve">
-    <value>https://YourPrivacyUrlGoesHere/</value>
+    <value>https://dps-doc.senzo.online/</value>
   </data>
   <data name="AppNotificationSamplePayload" xml:space="preserve">
     <value>&lt;toast launch="action=ToastClick"&gt;
@@ -100,12 +100,9 @@
     &lt;binding template="ToastGeneric"&gt;
       &lt;text&gt;App Notification&lt;/text&gt;
       &lt;text&gt;&lt;/text&gt;
-      &lt;image placement="appLogoOverride" hint-crop="circle" src="{0}Assets/WindowIcon.ico"/&gt;
+      &lt;image placement="appLogoOverride" hint-crop="circle" src="{0}Assets/YosinLogo_sb.ico"/&gt;
     &lt;/binding&gt;
   &lt;/visual&gt;
-  &lt;actions&gt;
-    &lt;action content="Settings" arguments="action=Settings"/&gt;
-  &lt;/actions&gt;
 &lt;/toast&gt;</value>
   </data>
   <data name="Shell_Server.Content" xml:space="preserve">

@@ -150,4 +150,27 @@
   <data name="Shell_AboutMe.Content" xml:space="preserve">
     <value>个人用户</value>
   </data>
+  <data name="AppNotificationSamplePayload" xml:space="preserve">
+    <value>&lt;toast launch="action=ToastClick"&gt;
+  &lt;visual&gt;
+    &lt;binding template="ToastGeneric"&gt;
+      &lt;text&gt;欢迎使用DP-S插件市场&lt;/text&gt;
+      &lt;text&gt;&lt;/text&gt;
+      &lt;image placement="appLogoOverride" hint-crop="circle" src="{0}Assets/YosinLogo_sb.ico"/&gt;
+    &lt;/binding&gt;
+  &lt;/visual&gt;
+&lt;/toast&gt;</value>
+  </data>
+  <data name="SettingsPage_PrivacyTermsLink.NavigateUri" xml:space="preserve">
+    <value>https://dps-doc.senzo.online/</value>
+  </data>
+  <data name="SettingsPage_PrivacyTermsLink.Content" xml:space="preserve">
+    <value>DP-S插件文档</value>
+  </data>
+  <data name="Settings_About.Text" xml:space="preserve">
+    <value>关于此App</value>
+  </data>
+  <data name="Settings_AboutDescription.Text" xml:space="preserve">
+    <value>软件完全免费，请勿用于商业用途，由此产生的后果由使用者承担.</value>
+  </data>
 </root>

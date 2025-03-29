@@ -2,11 +2,188 @@
     x:Class="DP_S_Marketplace.Views.ServerPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:converters="using:DP_S_Marketplace.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:table="using:WinUI.TableView"
     mc:Ignorable="d">
-
+    <Page.Resources>
+        <converters:NullableLongToDoubleConverter x:Key="NullableLongToDoubleConverter" />
+    </Page.Resources>
     <Grid x:Name="ContentArea">
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock
+            Grid.RowSpan="2"
+            Grid.Column="0"
+            Text="正在使用中的脚本" />
+        <Border Grid.Row="0" Style="{ThemeResource BorderPanel}">
+            <table:TableView
+                x:Name="ServerTableView"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                ItemsSource="{x:Bind ViewModel.ProjectInfos}"
+                SelectionMode="Single"
+                SelectionUnit="Row">
+                <table:TableView.Columns>
+                    <table:TableViewTemplateColumn Width="*" Header="脚本名称">
+                        <table:TableViewTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image
+                                        Width="28"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Source="ms-appx:///Assets/YosinLogo_sb.ico" />
+                                    <TextBlock
+                                        Margin="5,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="{Binding ProjectName}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </table:TableViewTemplateColumn.CellTemplate>
+                    </table:TableViewTemplateColumn>
+                    <table:TableViewTextColumn
+                        Width="*"
+                        Binding="{Binding ProjectAuthor}"
+                        Header="作者" />
+                    <table:TableViewTextColumn
+                        Width="*"
+                        Binding="{Binding ProjectVersion}"
+                        Header="版本号" />
+                </table:TableView.Columns>
+                <table:TableView.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="查看配置" />
+                    </MenuFlyout>
+                </table:TableView.ContextFlyout>
+            </table:TableView>
+        </Border>
+
+
+        <StackPanel
+            Grid.Row="0"
+            Grid.Column="1"
+            Margin="20,0,0,0"
+            Orientation="Vertical"
+            Style="{ThemeResource StackPanelStyle}">
+            <controls:RadialGauge
+                x:Name="RadialGauge"
+                Width="180"
+                IsEnabled="True"
+                IsInteractive="True"
+                MaxAngle="360"
+                Maximum="{x:Bind ViewModel.MainDisks.Available, Mode=OneWay, Converter={StaticResource NullableLongToDoubleConverter}}"
+                MinAngle="0"
+                Minimum="0"
+                NeedleLength="50"
+                NeedleWidth="4"
+                ScalePadding="8"
+                ScaleTickWidth="0"
+                ScaleWidth="10"
+                StepSize="1"
+                TickLength="4"
+                TickPadding="19"
+                TickSpacing="10"
+                TickWidth="4"
+                ValueStringFormat="N0"
+                Value="{x:Bind ViewModel.AnimationValue, Mode=TwoWay}" />
+            <TextBlock HorizontalAlignment="Center">
+                <Run Text="主分区已使用：" />
+                <Run Text="{x:Bind Path=ViewModel.MainDisks.Used, Mode=OneWay}" />
+                <Run Text="/" />
+                <Run Text="{x:Bind ViewModel.MainDisks.Available, Mode=OneWay}" />
+                <Run Text="GB" />
+            </TextBlock>
+            <Border Margin="0,26,0,10">
+                <Grid>
+                    <FontIcon
+                        Width="40"
+                        Height="40"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Glyph="&#xE8A5;" />
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontWeight="Bold"
+                            Text="文档文件" />
+                        <TextBlock HorizontalAlignment="Center">
+                            <Run Text="{x:Bind ViewModel.FileTypeUsages_Documents.Size, Mode=OneWay}" />
+                            <Run Text="GB" />
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Margin="0,0,0,10">
+                <Grid>
+                    <FontIcon
+                        Width="40"
+                        Height="40"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Glyph="&#xEA0C;" />
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontWeight="Bold"
+                            Text="媒体文件" />
+                        <TextBlock HorizontalAlignment="Center">
+                            <Run Text="{x:Bind ViewModel.FileTypeUsages_Videos.Size, Mode=OneWay}" />
+                            <Run Text="GB" />
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Margin="0,0,0,10">
+                <Grid>
+                    <FontIcon
+                        Width="40"
+                        Height="40"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Glyph="&#xE943;" />
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontWeight="Bold"
+                            Text="nut文件" />
+                        <TextBlock HorizontalAlignment="Center">
+                            <Run Text="{x:Bind ViewModel.FileTypeUsages_Nut.Size, Mode=OneWay}" />
+                            <Run Text="GB" />
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Margin="0,0,0,10">
+                <Grid>
+                    <FontIcon
+                        Width="40"
+                        Height="40"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Glyph="&#xE9CE;" />
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontWeight="Bold"
+                            Text="未知类型" />
+                        <TextBlock HorizontalAlignment="Center">
+                            <Run Text="{x:Bind ViewModel.FileTypeUsages_Unkown.Size, Mode=OneWay}" />
+                            <Run Text="GB" />
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+
+
     </Grid>
 </Page>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentDialog
+    x:Class="DP_S_Marketplace.Views.ConnectionInfoDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:DP_S_Marketplace.Helpers"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:DP_S_Marketplace.Views"
+    xmlns:models="using:DP_S_Marketplace.Models"
+    Title="新增数据库连接"
+    Width="600"
+    Height="400"
+    Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}"
+    DefaultButton="Primary"
+    PrimaryButtonCommand="{x:Bind ViewModel.SaveNewConnectionCommand}"
+    PrimaryButtonText="确定"
+    SecondaryButtonText="取消"
+    Style="{StaticResource DefaultContentDialogStyle}">
+    <ContentDialog.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </ContentDialog.Resources>
+    <StackPanel Orientation="Vertical">
+        <TextBox
+            Width="280"
+            Margin="0,0,0,16"
+            Header="连接名称"
+            IsReadOnly="False"
+            PlaceholderText="为这个连接取个名字"
+            Text="{x:Bind ViewModel.NewConnectionName, Mode=TwoWay}" />
+        <TextBox
+            Width="280"
+            Margin="0,0,0,16"
+            Header="服务器地址"
+            IsReadOnly="False"
+            PlaceholderText="例：192.168.200.131"
+            Text="{x:Bind ViewModel.NewConnectionIp, Mode=TwoWay}" />
+        <TextBox
+            Width="280"
+            Margin="0,0,0,16"
+            Header="用户名"
+            IsReadOnly="False"
+            PlaceholderText="用户名"
+            Text="{x:Bind ViewModel.NewConnectionUser, Mode=TwoWay}" />
+        <TextBox
+            Width="280"
+            Margin="0,0,0,16"
+            Header="密码"
+            IsReadOnly="False"
+            Text="{x:Bind ViewModel.NewConnectionPassword, Mode=TwoWay}" />
+        <Button
+            Width="280"
+            Command="{x:Bind ViewModel.TestConnectionCommand}"
+            Content="测试连接" />
+        <TextBlock Text="{x:Bind ViewModel.TestResult, Mode=TwoWay}" Visibility="{x:Bind ViewModel.TestFail, Converter={StaticResource BooleanToVisibilityConverter}}" />
+    </StackPanel>
+</ContentDialog>
