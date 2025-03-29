@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DP_S_Marketplace.Contracts.Services;
 using DP_S_Marketplace.Models;
+using WinRT;
 
 namespace DP_S_Marketplace.ViewModels;
 
@@ -31,7 +32,8 @@ public partial class ScriptMarketplaceViewModel : ObservableRecipient
     [RelayCommand]
     public async Task GetServerPlugins()
     {
-        await ScriptMarketplaceService.GetServerPlugins(ProjectInfos);
+        var a = await ScriptMarketplaceService.GetServerPlugins();
+        ProjectInfos =  a;
     }
 
 

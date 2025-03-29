@@ -284,10 +284,11 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         }
     }
 
-    public async Task GetServerPlugins(ObservableCollection<ProjectInfo> projectInfos)
+    public async Task<ObservableCollection<ProjectInfo>> GetServerPlugins()
     {
         try
         {
+            var projectInfos = new ObservableCollection<ProjectInfo>();
             // 获取文件列表
             var pathResponse = await ApiService.PostAsync<Data>("/api/fs/list?path=/InfoDB", null, true);
             var dataList = pathResponse.Data;
@@ -328,6 +329,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                         GrowlMsg.Show("下载链接无效。", false);
                     }
                 }
+                return projectInfos;
             }
             else
             {
@@ -339,6 +341,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
             // 输出详细的异常信息
             GrowlMsg.Show($"发生异常：{ex.Message}", false);
         }
+        return [];
     }
 
     public async Task<List<ProjectInfo>> GetServerPluginVersion()

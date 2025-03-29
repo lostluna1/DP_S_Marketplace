@@ -13,13 +13,6 @@ public interface IScriptMarketplaceService
     Task DowloadToLinux(ProjectInfo projectInfo);
 
     /// <summary>
-    /// 从服务器获取插件
-    /// </summary>
-    /// <param name="projectInfos"></param>
-    /// <returns></returns>
-    Task GetServerPlugins(ObservableCollection<ProjectInfo> projectInfos);
-
-    /// <summary>
     /// 获取磁盘使用情况
     /// </summary>
     /// <returns></returns>
@@ -36,4 +29,11 @@ public interface IScriptMarketplaceService
     /// </summary>
     /// <returns></returns>
     Task<List<ProjectInfo>> GetServerPluginVersion();
+
+    /// <summary>
+    /// 从服务器获取插件
+    /// </summary>
+    /// <param name="projectInfos"></param>
+    /// <returns></returns>
+    Task<ObservableCollection<ProjectInfo>> GetServerPlugins();
 }
