@@ -21,13 +21,20 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <TextBlock
-            Grid.Column="0"
-            Margin="0,0,0,0"
-            VerticalAlignment="Center">
-            <Run Text="已安装DP_S版本：" />
-            <Run Text="{x:Bind ViewModel.InstalledVersion, Mode=OneWay}" />
-        </TextBlock>
+        <StackPanel Grid.Column="0" Orientation="Horizontal">
+            <InfoBar
+                Title="提示"
+                Width="400"
+                HorizontalAlignment="Left"
+                IsOpen="True"
+                Message="右键点击行可查看/编辑该脚本的配置信息"
+                Severity="Informational" />
+            <TextBlock Margin="16,0,0,0" VerticalAlignment="Center">
+                <Run Text="已安装DP_S版本：" />
+                <Run Text="{x:Bind ViewModel.InstalledVersion, Mode=OneWay}" />
+            </TextBlock>
+        </StackPanel>
+
         <!--  安装按钮和进度条  -->
         <StackPanel
             Grid.Row="0"

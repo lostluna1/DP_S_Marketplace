@@ -12,14 +12,14 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <InfoBar
+        <!--<InfoBar
             Title="提示"
             Grid.Row="0"
             Width="400"
             HorizontalAlignment="Left"
             IsOpen="True"
             Message="右键点击行可查看该脚本的配置信息"
-            Severity="Informational" />
+            Severity="Informational" />-->
         <AutoSuggestBox
             x:Name="SearchBox"
             Grid.Row="0"
@@ -86,20 +86,6 @@
                                             <TextBlock Margin="5,0,0,0" Text="下载到服务端" />
                                         </StackPanel>
                                     </HyperlinkButton>
-                                    <!--<HyperlinkButton
-                                        Margin="0,8,0,0"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Click="Button_Click"
-                                        Style="{StaticResource AccentButtonStyle}">
-                                        <StackPanel
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Orientation="Horizontal">
-                                            <SymbolIcon Symbol="Download" />
-                                            <TextBlock Margin="5,0,0,0" Text="下载到服务端" />
-                                        </StackPanel>
-                                    </HyperlinkButton>-->
                                 </StackPanel>
                             </DataTemplate>
                         </table:TableViewTemplateColumn.CellTemplate>
@@ -107,11 +93,11 @@
 
 
                 </table:TableView.Columns>
-                <table:TableView.ContextFlyout>
+                <!--<table:TableView.ContextFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem Text="查看配置" />
                     </MenuFlyout>
-                </table:TableView.ContextFlyout>
+                </table:TableView.ContextFlyout>-->
             </table:TableView>
         </Border>
 

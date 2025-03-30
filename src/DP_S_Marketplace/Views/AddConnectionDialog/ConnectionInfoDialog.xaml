@@ -47,10 +47,10 @@
             Header="密码"
             IsReadOnly="False"
             Text="{x:Bind ViewModel.NewConnectionPassword, Mode=TwoWay}" />
-        <Button
+        <!--<Button
             Width="280"
             Command="{x:Bind ViewModel.TestConnectionCommand}"
             Content="测试连接" />
-        <TextBlock Text="{x:Bind ViewModel.TestResult, Mode=TwoWay}" Visibility="{x:Bind ViewModel.TestFail, Converter={StaticResource BooleanToVisibilityConverter}}" />
+        <TextBlock Text="{x:Bind ViewModel.TestResult, Mode=TwoWay}" Visibility="{x:Bind ViewModel.TestFail, Converter={StaticResource BooleanToVisibilityConverter}}" />-->
     </StackPanel>
 </ContentDialog>
