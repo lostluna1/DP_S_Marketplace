@@ -83,6 +83,12 @@ public partial class ServerViewModel : ObservableRecipient
         set;
     }
 
+    [ObservableProperty]
+    public partial string? InstallBtnContent
+    {
+        get; set;
+    } 
+
     /// <summary>
     /// 要编辑的脚本配置文件内容
     /// </summary>
@@ -207,28 +213,22 @@ public partial class ServerViewModel : ObservableRecipient
         {
             using (var httpClient = new HttpClient())
             {
-                using (var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+                using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+
+                using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+                var totalBytes = response.Content.Headers.ContentLength.GetValueOrDefault();
+                var buffer = new byte[8192];
+                var bytesRead = 0;
+                var totalRead = 0;
+
+                using var contentStream = await response.Content.ReadAsStreamAsync();
+                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
-                    response.EnsureSuccessStatusCode();
-
-                    using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
-                    {
-                        var totalBytes = response.Content.Headers.ContentLength.GetValueOrDefault();
-                        var buffer = new byte[8192];
-                        var bytesRead = 0;
-                        var totalRead = 0;
-
-                        using (var contentStream = await response.Content.ReadAsStreamAsync())
-                        {
-                            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                            {
-                                await fileStream.WriteAsync(buffer, 0, bytesRead);
-                                totalRead += bytesRead;
-                                Debug.WriteLine($"下载进度: {totalRead}/{totalBytes} ({(totalRead * 100.0 / totalBytes):F2}%)");
-                                InstallProgressValue = totalRead * 100.0 / totalBytes;
-                            }
-                        }
-                    }
+                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    totalRead += bytesRead;
+                    Debug.WriteLine($"下载进度: {totalRead}/{totalBytes} ({(totalRead * 100.0 / totalBytes):F2}%)");
+                    InstallProgressValue = totalRead * 100.0 / totalBytes;
                 }
             }
 
@@ -309,15 +309,22 @@ public partial class ServerViewModel : ObservableRecipient
         await GetDiskUsagesAsync();
         await GetFileTypeUsagesAsync();
 
-
+        var latestVersion = await ScriptInstaller.GetLatestDP_SVersionInfo();
         var a = await ScriptInstaller.GetInstalledVersion();
         if (a.ProjectVersion == 0)
         {
             InstalledVersion = "未安装";
+            InstallBtnContent = "一键安装";
+        }
+        else if (latestVersion.ProjectVersion>a.ProjectVersion)
+        {
+            InstallBtnContent = "更新";
+            //InstalledVersion = "";
         }
         else
         {
             InstalledVersion = a.ProjectVersion.ToString();
+            InstallBtnContent = "重新安装";
         }
     }
 

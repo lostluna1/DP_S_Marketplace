@@ -1,9 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace DP_S_Marketplace.Models;
-
+public enum PluginStatus
+{
+    NotInstalled,   // 未安装
+    CanUpdate,      // 可以更新
+    LatestVersion   // 已是最新版本
+}
 public partial class ProjectInfo : ObservableObject
 {
+    [ObservableProperty]
+    public partial PluginStatus Status
+    {
+        get;set;
+    }
 
     [ObservableProperty]
     public partial string? FilePath
@@ -39,7 +49,7 @@ public partial class ProjectInfo : ObservableObject
     {
         get;
         set;
-    } 
+    }
 
     public string? ProjectConfig
     {

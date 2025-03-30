@@ -41,9 +41,10 @@
             Grid.Column="1"
             Margin="10,0,10,0"
             Orientation="Vertical">
-            <Button Command="{x:Bind ViewModel.DownloadDPSCommand}" Style="{StaticResource AccentButtonStyle}">
-                一键安装
-            </Button>
+            <Button
+                Command="{x:Bind ViewModel.DownloadDPSCommand}"
+                Content="{x:Bind ViewModel.InstallBtnContent, Mode=TwoWay}"
+                Style="{StaticResource AccentButtonStyle}" />
             <ProgressBar
                 Width="200"
                 Margin="0,10,10,10"

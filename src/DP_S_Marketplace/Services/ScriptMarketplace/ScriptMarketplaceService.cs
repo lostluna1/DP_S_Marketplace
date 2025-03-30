@@ -60,7 +60,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         var remoteDirectory = Path.GetDirectoryName(remoteFullPath);
 
         // 确保远程目录存在
-        CreateDirectoryRecursive1(sftp, remoteDirectory);
+        CreateDirectoryRecursive(sftp, remoteDirectory);
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
         sftp.UploadFile(stream, remoteFullPath, true);
@@ -503,11 +503,23 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
 
         foreach (var projectInfo in projectInfos)
         {
-            var existingProject = downloadedProjects.FirstOrDefault(p => p.ProjectName == projectInfo.ProjectName && p.ProjectVersion == projectInfo.ProjectVersion);
+            var existingProject = downloadedProjects.FirstOrDefault(p => p.ProjectName == projectInfo.ProjectName);
 
             if (existingProject == null)
             {
                 downloadedProjects.Add(projectInfo);
+            }
+            else if (existingProject.ProjectVersion < projectInfo.ProjectVersion)
+            {
+                // 如果现有项目的版本低于新项目的版本，则更新现有项目的信息
+                existingProject.FilePath = projectInfo.FilePath;
+                existingProject.ProjectAuthor = projectInfo.ProjectAuthor;
+                existingProject.Raw_Url = projectInfo.Raw_Url;
+                existingProject.ProjectFiles = projectInfo.ProjectFiles;
+                existingProject.ProjectConfig = projectInfo.ProjectConfig;
+                existingProject.ProjectDescribe = projectInfo.ProjectDescribe;
+                existingProject.ProjectRunFunc = projectInfo.ProjectRunFunc;
+                existingProject.ProjectVersion = projectInfo.ProjectVersion;
             }
 
             // 将 ProjectInfo 对象保存到 JSON 文件中
@@ -517,13 +529,13 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // 允许直接输出非 ASCII 字符
             });
 
-            var projectInfoFilePath = Path.Combine(Path.GetDirectoryName(DownloadedProjectsFilePath) ?? string.Empty, $"{projectInfo.ProjectName}_{projectInfo.ProjectVersion}.json").Replace("\\", "/");
+            //var projectInfoFilePath = Path.Combine(Path.GetDirectoryName(DownloadedProjectsFilePath) ?? string.Empty, $"{projectInfo.ProjectName}_{projectInfo.ProjectVersion}.json").Replace("\\", "/");
 
-            // 确保远程目录存在
-            CreateDirectoryRecursive1(sftp, Path.GetDirectoryName(projectInfoFilePath));
+            //// 确保远程目录存在
+            //CreateDirectoryRecursive1(sftp, Path.GetDirectoryName(projectInfoFilePath));
 
-            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(projectInfoJson));
-            sftp.UploadFile(stream, projectInfoFilePath, true);
+            //using var stream = new MemoryStream(Encoding.UTF8.GetBytes(projectInfoJson));
+            //sftp.UploadFile(stream, projectInfoFilePath, true);
         }
 
         var updatedJson = JsonSerializer.Serialize(downloadedProjects, new JsonSerializerOptions
@@ -538,25 +550,6 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         }
     }
 
-    private static void CreateDirectoryRecursive1(SftpClient sftp, string? path)
-    {
-        if (string.IsNullOrEmpty(path))
-        {
-            return;
-        }
-
-        var parts = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-        var currentPath = "/";
-
-        foreach (var part in parts)
-        {
-            currentPath = Path.Combine(currentPath, part).Replace("\\", "/");
-            if (!sftp.Exists(currentPath))
-            {
-                sftp.CreateDirectory(currentPath);
-            }
-        }
-    }
 
 
 

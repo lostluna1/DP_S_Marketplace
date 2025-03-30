@@ -20,7 +20,7 @@ public sealed partial class ScriptMarketplacePage : Page
 
     private async void Button_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        if (sender is HyperlinkButton button && button.DataContext is ProjectInfo projectInfo)
+        if (sender is Button button && button.DataContext is ProjectInfo projectInfo)
         {
             ViewModel.SelectedProjectInfo = projectInfo;
         }

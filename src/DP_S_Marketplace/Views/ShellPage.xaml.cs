@@ -63,20 +63,20 @@ public sealed partial class ShellPage : Page
             await dialog.ShowAsync();
             ViewModel.NavigationService.NavigateTo(typeof(SettingsViewModel).FullName!);
         }
-        else
-        {
-            try
-            {
+        //else
+        //{
+        //    try
+        //    {
 
-                ViewModel.SelectedConnection = ViewModel.Connections.FirstOrDefault(c => c.IsSelected) ?? ViewModel.Connections.FirstOrDefault();
+        //        ViewModel.SelectedConnection = ViewModel.Connections.FirstOrDefault(c => c.IsSelected) ?? ViewModel.Connections.FirstOrDefault();
              
-            }
-            catch (Exception ex)
-            {
-                //_ = Logger.Instance.WriteLogAsync($"ShellPage.OnLoaded : {ex}", "connectionLog.txt");
-                throw new Exception($"{ViewModel.SelectedConnection?.Name} : 连接失败，请检查连接信息", ex);
-            }
-        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //_ = Logger.Instance.WriteLogAsync($"ShellPage.OnLoaded : {ex}", "connectionLog.txt");
+        //        throw new Exception($"{ViewModel.SelectedConnection?.Name} : 连接失败，请检查连接信息", ex);
+        //    }
+        //}
     }
 
     private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)

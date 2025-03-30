@@ -29,18 +29,44 @@ public partial class ScriptMarketplaceViewModel : ObservableRecipient
         _ = GetServerPlugins();
     }
 
+
     [RelayCommand]
     public async Task GetServerPlugins()
     {
-        var a = await ScriptMarketplaceService.GetServerPlugins();
-        ProjectInfos =  a;
+        var pluginsServer = await ScriptMarketplaceService.GetServerPlugins();
+        var pluginsInstalled = new ObservableCollection<ProjectInfo>(await ScriptMarketplaceService.GetServerPluginVersion());
+
+        foreach (var pluginServer in pluginsServer)
+        {
+            var pluginInstalled = pluginsInstalled.FirstOrDefault(p => p.ProjectName == pluginServer.ProjectName);
+            if (pluginInstalled == null)
+            {
+                // 插件未安装
+                pluginServer.Status = PluginStatus.NotInstalled;
+            }
+            else if (pluginInstalled.ProjectVersion < pluginServer.ProjectVersion)
+            {
+                // 可以更新
+                pluginServer.Status = PluginStatus.CanUpdate;
+            }
+            else
+            {
+                // 已是最新版本
+                pluginServer.Status = PluginStatus.LatestVersion;
+            }
+        }
+
+        ProjectInfos = pluginsServer;
     }
+
 
 
     [RelayCommand]
     public async Task DowloadToLinux()
     {
         await ScriptMarketplaceService.DowloadToLinux(SelectedProjectInfo!);
+        // 下载完成后，更新插件的状态
+        SelectedProjectInfo!.Status = PluginStatus.LatestVersion;
     }
 
 
