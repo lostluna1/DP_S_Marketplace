@@ -37,4 +37,5 @@ public interface IScriptMarketplaceService
     /// <returns></returns>
     Task<ObservableCollection<ProjectInfo>> GetServerPlugins();
     Task<string> GetRemoteConfigFileAsync(string remoteFilePath);
+    void SaveJsonToRemoteFile(string remoteFilePath, string jsonContent);
 }

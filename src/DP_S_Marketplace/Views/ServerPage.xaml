@@ -55,14 +55,20 @@
                 IsReadOnly="True"
                 ItemsSource="{x:Bind ViewModel.ProjectInfos}"
                 RightTapped="ServerTableView_RightTapped"
-                SelectedItem="{x:Bind ViewModel.SlectedProjectInfo}"
+                SelectedItem="{x:Bind ViewModel.SlectedProjectInfo, Mode=TwoWay}"
                 SelectionMode="Single"
                 SelectionUnit="Row">
                 <table:TableView.Columns>
                     <table:TableViewTemplateColumn Width="*" Header="脚本名称">
                         <table:TableViewTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    PointerEntered="PointerEntered"
+                                    PointerExited="StackPanel_PointerExited">
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip Content="{Binding ProjectDescribe}" />
+                                    </ToolTipService.ToolTip>
                                     <Image
                                         Width="28"
                                         HorizontalAlignment="Left"

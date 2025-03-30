@@ -7,6 +7,7 @@ using DP_S_Marketplace.Helpers;
 using DP_S_Marketplace.Models;
 using DP_S_Marketplace.Services;
 using Microsoft.UI.Xaml;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Renci.SshNet;
 
@@ -127,6 +128,52 @@ public partial class ServerViewModel : ObservableRecipient
         var a = await ScriptMarketplaceService.GetRemoteConfigFileAsync(projectInfo.ProjectConfig);
         return  a;
     }
+
+    [RelayCommand]
+    public void SaveConfigFile()
+    {
+        var a = SlectedProjectInfo;
+        if (a is not null && a.ProjectConfig is not null && EditConfigFile is not null)
+        {
+            if (IsValidJson(EditConfigFile))
+            {
+                ScriptMarketplaceService.SaveJsonToRemoteFile(a.ProjectConfig, EditConfigFile);
+            }
+            else
+            {
+                GrowlMsg.Show("配置文件内容不是合法的 JSON 格式。", false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 验证字符串是否为合法的 JSON 格式
+    /// </summary>
+    /// <param name="strInput"></param>
+    /// <returns></returns>
+    private bool IsValidJson(string strInput)
+    {
+        strInput = strInput.Trim();
+        if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || // 对象
+            (strInput.StartsWith("[") && strInput.EndsWith("]")))   // 数组
+        {
+            try
+            {
+                var obj = JToken.Parse(strInput);
+                return true;
+            }
+            catch (JsonReaderException)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+
     [RelayCommand]
     public async Task DownloadDPS()
     {

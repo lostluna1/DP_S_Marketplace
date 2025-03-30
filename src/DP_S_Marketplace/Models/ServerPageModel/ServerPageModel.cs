@@ -2,7 +2,7 @@
 
 namespace DP_S_Marketplace.Models;
 
-public partial class ProjectInfo : ObservableValidator
+public partial class ProjectInfo : ObservableObject
 {
 
     [ObservableProperty]
@@ -46,7 +46,11 @@ public partial class ProjectInfo : ObservableValidator
         get;
         set;
     }
-
+    public string? ProjectDescribe
+    {
+        get;
+        set;
+    }
     public string? ProjectRunFunc
     {
         get;

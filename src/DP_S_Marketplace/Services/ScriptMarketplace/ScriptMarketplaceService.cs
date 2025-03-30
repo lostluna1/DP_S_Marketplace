@@ -8,6 +8,7 @@ using Renci.SshNet;
 using DP_S_Marketplace.Core.Helpers;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Microsoft.UI.Xaml.Media;
 
 namespace DP_S_Marketplace.Services;
 public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketplaceService
@@ -42,6 +43,29 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
 
         return fileContent;
 
+    }
+    public void SaveJsonToRemoteFile(string remoteFilePath, string jsonContent)
+    {
+        var globalVariables = GlobalVariables.Instance;
+        var connectionInfo = globalVariables.ConnectionInfo;
+        if (connectionInfo == null || string.IsNullOrEmpty(connectionInfo.Ip) || string.IsNullOrEmpty(connectionInfo.User) || string.IsNullOrEmpty(connectionInfo.Password))
+        {
+            throw new InvalidOperationException("连接信息无效");
+        }
+
+        using var sftp = new SftpClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
+        sftp.Connect();
+
+        var remoteFullPath = $"/dp_s/OffcialConfig/{remoteFilePath}";
+        var remoteDirectory = Path.GetDirectoryName(remoteFullPath);
+
+        // 确保远程目录存在
+        CreateDirectoryRecursive1(sftp, remoteDirectory);
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
+        sftp.UploadFile(stream, remoteFullPath, true);
+        GrowlMsg.Show("配置文件已成功保存到 Linux 服务器。", true);
+        sftp.Disconnect();
     }
 
 
@@ -252,15 +276,13 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                 foreach (var item in projectInfo.ProjectFiles)
                 {
                     var nutFileDownloadLink = await ApiService.PostAsync<Data>($"/api/fs/get?path=/Script/{projectInfo?.ProjectName}/{item}", null, true);
-                    using (var httpClient = new HttpClient())
-                    {
-                        var response = await httpClient.GetAsync(nutFileDownloadLink?.Data?.Raw_Url);
-                        response.EnsureSuccessStatusCode();
+                    using var httpClient = new HttpClient();
+                    var response = await httpClient.GetAsync(nutFileDownloadLink?.Data?.Raw_Url);
+                    response.EnsureSuccessStatusCode();
 
-                        var tempFilePath = Path.Combine(tempFolderPath, item);
-                        using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
-                        await response.Content.CopyToAsync(fileStream);
-                    }
+                    var tempFilePath = Path.Combine(tempFolderPath, item);
+                    using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
+                    await response.Content.CopyToAsync(fileStream);
                 }
             }
 
@@ -283,14 +305,12 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
             if (!string.IsNullOrEmpty(link))
             {
                 var tempFilePath = Path.Combine(tempFolderPath, "Proj.ifo");
-                using (var httpClient = new HttpClient())
-                {
-                    var response = await httpClient.GetAsync(link);
-                    response.EnsureSuccessStatusCode();
+                using var httpClient = new HttpClient();
+                var response = await httpClient.GetAsync(link);
+                response.EnsureSuccessStatusCode();
 
-                    using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
-                    await response.Content.CopyToAsync(fileStream);
-                }
+                using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
+                await response.Content.CopyToAsync(fileStream);
             }
 
             // 配置 SFTP 连接信息

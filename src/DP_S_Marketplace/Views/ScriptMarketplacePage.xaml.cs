@@ -28,4 +28,23 @@ public sealed partial class ScriptMarketplacePage : Page
         await ViewModel.DowloadToLinux();
     }
 
+    private void PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        var stackPanel = sender as StackPanel;
+        var toolTip = ToolTipService.GetToolTip(stackPanel) as ToolTip;
+        if (toolTip != null)
+        {
+            toolTip.IsOpen = true;
+        }
+    }
+
+    private void StackPanel_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        var stackPanel = sender as StackPanel;
+        var toolTip = ToolTipService.GetToolTip(stackPanel) as ToolTip;
+        if (toolTip != null)
+        {
+            toolTip.IsOpen = false;
+        }
+    }
 }
