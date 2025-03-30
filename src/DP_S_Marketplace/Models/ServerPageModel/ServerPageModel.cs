@@ -34,4 +34,22 @@ public partial class ProjectInfo : ObservableValidator
     {
         get; set;
     }
+
+    public List<string>? ProjectFiles
+    {
+        get;
+        set;
+    } 
+
+    public string? ProjectConfig
+    {
+        get;
+        set;
+    }
+
+    public string? ProjectRunFunc
+    {
+        get;
+        set;
+    }
 }

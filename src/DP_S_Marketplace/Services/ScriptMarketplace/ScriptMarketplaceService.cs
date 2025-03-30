@@ -7,6 +7,7 @@ using DP_S_Marketplace.Models;
 using Renci.SshNet;
 using DP_S_Marketplace.Core.Helpers;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace DP_S_Marketplace.Services;
 public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketplaceService
@@ -212,14 +213,52 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         {
             return;
         }
-        if (!string.IsNullOrEmpty(link))
-        {
-            // 定义本地临时文件路径
-            var tempFilePath = Path.GetTempFileName();
 
-            try
+        // 定义本地临时文件夹路径
+        var tempFolderPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(tempFolderPath);
+        // 定义远程文件路径
+        var remoteProjectDirectory = $"/dp_s/OfficialProject/{projectInfo?.ProjectName}";
+        var remoteConfigDirectory = "/dp_s/OfficialConfig/";
+        try
+        {
+            // 下载项目文件
+            if (projectInfo?.ProjectFiles?.Count > 0)
             {
-                // 下载文件到本地临时文件
+                foreach (var item in projectInfo.ProjectFiles)
+                {
+                    var nutFileDownloadLink = await ApiService.PostAsync<Data>($"/api/fs/get?path=/Script/{projectInfo?.ProjectName}/{item}", null, true);
+                    using (var httpClient = new HttpClient())
+                    {
+                        var response = await httpClient.GetAsync(nutFileDownloadLink?.Data?.Raw_Url);
+                        response.EnsureSuccessStatusCode();
+
+                        var tempFilePath = Path.Combine(tempFolderPath, item);
+                        using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
+                        await response.Content.CopyToAsync(fileStream);
+                    }
+                }
+            }
+
+            // 下载配置文件
+            if (!string.IsNullOrEmpty(projectInfo?.ProjectConfig))
+            {
+                var nutConfigDownloadLink = await ApiService.PostAsync<Data>($"/api/fs/get?path=/Script/{projectInfo?.ProjectName}/{projectInfo?.ProjectConfig}", null, true);
+                using (var httpClient = new HttpClient())
+                {
+                    var response = await httpClient.GetAsync(nutConfigDownloadLink?.Data?.Raw_Url);
+                    response.EnsureSuccessStatusCode();
+
+                    var tempFilePath = Path.Combine(tempFolderPath, projectInfo?.ProjectConfig);
+                    using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
+                    await response.Content.CopyToAsync(fileStream);
+                }
+            }
+
+            // 下载主文件
+            if (!string.IsNullOrEmpty(link))
+            {
+                var tempFilePath = Path.Combine(tempFolderPath, "Proj.ifo");
                 using (var httpClient = new HttpClient())
                 {
                     var response = await httpClient.GetAsync(link);
@@ -228,61 +267,77 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                     using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
                     await response.Content.CopyToAsync(fileStream);
                 }
+            }
 
-                // 配置 SFTP 连接信息
-                var host = connectionInfo.Ip;
-                var username = connectionInfo.User;
-                var password = connectionInfo.Password;
+            // 配置 SFTP 连接信息
+            var host = connectionInfo.Ip;
+            var username = connectionInfo.User;
+            var password = connectionInfo.Password;
 
-                // 定义远程文件路径
-                var remoteDirectory = "/dp_s/script_info";
-                var remoteFilePath = remoteDirectory + "/" + projectInfo?.ProjectName;
+            // 使用 SFTP 上传文件
+            using (var sftp = new SftpClient(host, Port, username, password))
+            {
+                sftp.Connect();
 
-                // 使用 SFTP 上传文件
-                using (var sftp = new SftpClient(host, Port, username, password))
+                // 确保远程项目目录存在
+                CreateDirectoryRecursive(sftp, remoteProjectDirectory);
+
+                // 确保远程配置文件目录存在
+                CreateDirectoryRecursive(sftp, remoteConfigDirectory);
+
+                // 上传项目文件到项目目录
+                foreach (var filePath in Directory.GetFiles(tempFolderPath))
                 {
-                    sftp.Connect();
+                    var fileName = Path.GetFileName(filePath);
+                    var remoteFilePath = fileName == projectInfo?.ProjectConfig
+                        ? Path.Combine(remoteConfigDirectory, fileName).Replace("\\", "/")
+                        : Path.Combine(remoteProjectDirectory, fileName).Replace("\\", "/");
 
-                    // 确保远程目录存在
-                    if (!sftp.Exists(remoteDirectory))
-                    {
-                        sftp.CreateDirectory(remoteDirectory);
-                    }
-
-                    using (var fileStream = new FileStream(tempFilePath, FileMode.Open))
-                    {
-                        sftp.UploadFile(fileStream, remoteFilePath);
-                    }
-
-                    // 将已下载的项目名称存储到 JSON 文件中
-                    await SaveDownloadedProjectNames(sftp, new List<ProjectInfo> { projectInfo! });
-
-                    sftp.Disconnect();
+                    using var fileStream = new FileStream(filePath, FileMode.Open);
+                    sftp.UploadFile(fileStream, remoteFilePath);
                 }
 
-                GrowlMsg.Show("文件已成功上传到 Linux 服务器。", true);
-                Console.WriteLine("文件已成功上传到 Linux 服务器。");
+                // 将已下载的项目名称存储到 JSON 文件中
+                await SaveDownloadedProjectNames(sftp, new List<ProjectInfo> { projectInfo! });
+
+                sftp.Disconnect();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"发生异常：{ex.Message}");
-                GrowlMsg.Show($"发生异常：{ex.Message}", false);
-            }
-            finally
-            {
-                // 删除本地临时文件
-                if (File.Exists(tempFilePath))
-                {
-                    File.Delete(tempFilePath);
-                }
-            }
+
+            GrowlMsg.Show("文件已成功上传到 Linux 服务器。", true);
+            Debug.WriteLine("文件已成功上传到 Linux 服务器。");
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("链接无效，请检查链接信息。");
-            GrowlMsg.Show("链接无效，请检查链接信息。", false);
+            Debug.WriteLine($"发生异常：{ex.Message}");
+            GrowlMsg.Show($"发生异常：{ex.Message}", false);
+        }
+        finally
+        {
+            // 删除本地临时文件夹
+            if (Directory.Exists(tempFolderPath))
+            {
+                Directory.Delete(tempFolderPath, true);
+            }
         }
     }
+
+    private void CreateDirectoryRecursive(SftpClient sftp, string path)
+    {
+        var parts = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+        var currentPath = "/";
+
+        foreach (var part in parts)
+        {
+            currentPath = Path.Combine(currentPath, part).Replace("\\", "/");
+            if (!sftp.Exists(currentPath))
+            {
+                sftp.CreateDirectory(currentPath);
+            }
+        }
+    }
+
+
+
 
     public async Task<ObservableCollection<ProjectInfo>> GetServerPlugins()
     {
@@ -290,7 +345,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         {
             var projectInfos = new ObservableCollection<ProjectInfo>();
             // 获取文件列表
-            var pathResponse = await ApiService.PostAsync<Data>("/api/fs/list?path=/InfoDB", null, true);
+            var pathResponse = await ApiService.PostAsync<Data>("/api/fs/list?path=/Script", null, true);
             var dataList = pathResponse.Data;
 
             if (dataList?.Content != null && dataList.Content.Count > 0)
@@ -300,7 +355,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                     var fileName = item.Name;
 
                     // 获取文件信息，得到下载链接
-                    var response = await ApiService.PostAsync<Data>($"/api/fs/get?path=/InfoDB/{fileName}&password=", null, true);
+                    var response = await ApiService.PostAsync<Data>($"/api/fs/get?path=/Script/{fileName}/Proj.ifo&password=", null, true);
                     var data = response.Data;
                     var link = data?.Raw_Url;
 
@@ -382,6 +437,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
     /// <param name="sftp"></param>
     /// <param name="projectInfos"></param>
     /// <returns></returns>
+
     private static async Task SaveDownloadedProjectNames(SftpClient sftp, IEnumerable<ProjectInfo> projectInfos)
     {
         if (projectInfos == null || !projectInfos.Any())
@@ -417,7 +473,10 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // 允许直接输出非 ASCII 字符
             });
 
-            var projectInfoFilePath = Path.Combine(Path.GetDirectoryName(DownloadedProjectsFilePath) ?? string.Empty, $"{projectInfo.ProjectName}_{projectInfo.ProjectVersion}.json");
+            var projectInfoFilePath = Path.Combine(Path.GetDirectoryName(DownloadedProjectsFilePath) ?? string.Empty, $"{projectInfo.ProjectName}_{projectInfo.ProjectVersion}.json").Replace("\\", "/");
+
+            // 确保远程目录存在
+            CreateDirectoryRecursive1(sftp, Path.GetDirectoryName(projectInfoFilePath));
 
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(projectInfoJson));
             sftp.UploadFile(stream, projectInfoFilePath, true);
@@ -434,6 +493,29 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
             sftp.UploadFile(stream, DownloadedProjectsFilePath, true);
         }
     }
+
+    private static void CreateDirectoryRecursive1(SftpClient sftp, string? path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return;
+        }
+
+        var parts = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+        var currentPath = "/";
+
+        foreach (var part in parts)
+        {
+            currentPath = Path.Combine(currentPath, part).Replace("\\", "/");
+            if (!sftp.Exists(currentPath))
+            {
+                sftp.CreateDirectory(currentPath);
+            }
+        }
+    }
+
+
+
 }
 public class FileTypeUsage
 {
