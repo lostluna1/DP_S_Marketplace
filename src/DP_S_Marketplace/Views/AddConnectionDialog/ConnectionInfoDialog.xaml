@@ -7,7 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:DP_S_Marketplace.Views"
     xmlns:models="using:DP_S_Marketplace.Models"
-    Title="新增数据库连接"
+    Title="新增Linux连接"
     Width="600"
     Height="400"
     Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}"

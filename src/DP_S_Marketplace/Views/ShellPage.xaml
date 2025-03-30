@@ -14,7 +14,7 @@
 
     <Grid>
         <winuiex:TitleBar
-            Title="DOF GMTool 2025"
+            Title="DP-S插件市场"
             Margin="20,0,0,0"
             VerticalAlignment="Top"
             IconSource="{wuc:BitmapIconSource Source=ms-appx:///Assets/YosinLogo_sb.ico}"

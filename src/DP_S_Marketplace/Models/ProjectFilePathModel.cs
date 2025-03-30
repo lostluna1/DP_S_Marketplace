@@ -64,3 +64,16 @@ public class ContentItem
     }
 
 }
+
+public class DP_SVersion
+{
+    public string? ProjectName
+    {
+        get; set;
+    }
+
+    public double ProjectVersion
+    {
+        get; set;
+    }
+}

@@ -10,26 +10,52 @@
     mc:Ignorable="d">
     <Page.Resources>
         <converters:NullableLongToDoubleConverter x:Key="NullableLongToDoubleConverter" />
+        <converters:DoubleToVisibilityConverter x:Key="DoubleToVisibilityConverter" />
     </Page.Resources>
     <Grid x:Name="ContentArea">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
         <TextBlock
-            Grid.RowSpan="2"
             Grid.Column="0"
-            Text="正在使用中的脚本" />
-        <Border Grid.Row="0" Style="{ThemeResource BorderPanel}">
+            Margin="0,0,0,0"
+            VerticalAlignment="Center">
+            <Run Text="已安装DP_S版本：" />
+            <Run Text="{x:Bind ViewModel.InstalledVersion, Mode=OneWay}" />
+        </TextBlock>
+        <!--  安装按钮和进度条  -->
+        <StackPanel
+            Grid.Row="0"
+            Grid.Column="1"
+            Margin="10,0,10,0"
+            Orientation="Vertical">
+            <Button Command="{x:Bind ViewModel.DownloadDPSCommand}" Style="{StaticResource AccentButtonStyle}">
+                一键安装
+            </Button>
+            <ProgressBar
+                Width="200"
+                Margin="0,10,10,10"
+                Visibility="{x:Bind ViewModel.InstallProgressValue, Mode=OneWay, Converter={StaticResource DoubleToVisibilityConverter}}"
+                Value="{x:Bind ViewModel.InstallProgressValue, Mode=TwoWay}" />
+        </StackPanel>
+
+        <!--  已安装插件列表  -->
+        <Border
+            Grid.Row="1"
+            Grid.Column="0"
+            Style="{ThemeResource BorderPanel}">
             <table:TableView
                 x:Name="ServerTableView"
                 AutoGenerateColumns="False"
                 IsReadOnly="True"
                 ItemsSource="{x:Bind ViewModel.ProjectInfos}"
+                RightTapped="ServerTableView_RightTapped"
+                SelectedItem="{x:Bind ViewModel.SlectedProjectInfo}"
                 SelectionMode="Single"
                 SelectionUnit="Row">
                 <table:TableView.Columns>
@@ -61,17 +87,18 @@
                 </table:TableView.Columns>
                 <table:TableView.ContextFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="查看配置" />
+                        <MenuFlyoutItem Click="EditScripConfig_Click" Text="编辑脚本配置项" />
                     </MenuFlyout>
                 </table:TableView.ContextFlyout>
             </table:TableView>
+
         </Border>
 
-
+        <!--  仪表盘  -->
         <StackPanel
-            Grid.Row="0"
+            Grid.Row="1"
             Grid.Column="1"
-            Margin="20,0,0,0"
+            Margin="10,0,0,0"
             Orientation="Vertical"
             Style="{ThemeResource StackPanelStyle}">
             <controls:RadialGauge
@@ -183,7 +210,9 @@
                 </Grid>
             </Border>
         </StackPanel>
-
-
     </Grid>
 </Page>
+
+
+
+

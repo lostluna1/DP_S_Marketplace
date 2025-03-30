@@ -68,6 +68,7 @@ public partial class App : Application
             services.AddSingleton<IPageService, PageService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<IScriptMarketplaceService, ScriptMarketplaceService>();
+            services.AddSingleton<IScriptInstaller, ScriptInstaller>();
 
             // Core Services
             services.AddSingleton<IFileService, FileService>();

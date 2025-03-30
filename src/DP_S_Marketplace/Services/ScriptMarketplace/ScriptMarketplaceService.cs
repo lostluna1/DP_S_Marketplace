@@ -21,7 +21,31 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
     } = apiService;
     private const int Port = 22;
 
-    
+    public async Task<string> GetRemoteConfigFileAsync(string remoteFilePath)
+    {
+        var globalVariables = GlobalVariables.Instance;
+        var connectionInfo = globalVariables.ConnectionInfo;
+        if (connectionInfo == null || string.IsNullOrEmpty(connectionInfo.Ip) || string.IsNullOrEmpty(connectionInfo.User) || string.IsNullOrEmpty(connectionInfo.Password))
+        {
+            return "连接信息无效";
+        }
+
+        using var sftp = new SftpClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
+        sftp.Connect();
+
+        // 打开远程文件的读取流
+        using var readStream = sftp.OpenRead($"/dp_s/OffcialConfig/{remoteFilePath}");
+        using var reader = new StreamReader(readStream);
+        // 读取文件内容
+        var fileContent = await reader.ReadToEndAsync();
+        sftp.Disconnect();
+
+        return fileContent;
+
+    }
+
+
+
     public List<FileTypeUsage> GetFileTypeUsages()
     {
         var globalVariables = GlobalVariables.Instance;
@@ -219,7 +243,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         Directory.CreateDirectory(tempFolderPath);
         // 定义远程文件路径
         var remoteProjectDirectory = $"/dp_s/OfficialProject/{projectInfo?.ProjectName}";
-        var remoteConfigDirectory = "/dp_s/OfficialConfig/";
+        var remoteConfigDirectory = "/dp_s/OffcialConfig/";
         try
         {
             // 下载项目文件

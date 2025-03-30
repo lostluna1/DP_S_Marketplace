@@ -36,4 +36,5 @@ public interface IScriptMarketplaceService
     /// <param name="projectInfos"></param>
     /// <returns></returns>
     Task<ObservableCollection<ProjectInfo>> GetServerPlugins();
+    Task<string> GetRemoteConfigFileAsync(string remoteFilePath);
 }
