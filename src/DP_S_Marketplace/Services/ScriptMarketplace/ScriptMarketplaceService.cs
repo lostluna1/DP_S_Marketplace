@@ -212,7 +212,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                 continue;
             }
 
-            var columns = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var columns = line.Split([' '], StringSplitOptions.RemoveEmptyEntries);
             if (columns.Length >= 6)
             {
                 var usage = new FileSystemUsageModel
@@ -228,7 +228,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
             }
         }
 
-        return new ObservableCollection<FileSystemUsageModel>(fileSystemUsages);
+        return [.. fileSystemUsages];
     }
 
     /// <summary>
@@ -290,15 +290,13 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
             if (!string.IsNullOrEmpty(projectInfo?.ProjectConfig))
             {
                 var nutConfigDownloadLink = await ApiService.PostAsync<Data>($"/api/fs/get?path=/Script/{projectInfo?.ProjectName}/{projectInfo?.ProjectConfig}", null, true);
-                using (var httpClient = new HttpClient())
-                {
-                    var response = await httpClient.GetAsync(nutConfigDownloadLink?.Data?.Raw_Url);
-                    response.EnsureSuccessStatusCode();
+                using var httpClient = new HttpClient();
+                var response = await httpClient.GetAsync(nutConfigDownloadLink?.Data?.Raw_Url);
+                response.EnsureSuccessStatusCode();
 
-                    var tempFilePath = Path.Combine(tempFolderPath, projectInfo?.ProjectConfig);
-                    using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
-                    await response.Content.CopyToAsync(fileStream);
-                }
+                var tempFilePath = Path.Combine(tempFolderPath, projectInfo?.ProjectConfig);
+                using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
+                await response.Content.CopyToAsync(fileStream);
             }
 
             // 下载主文件

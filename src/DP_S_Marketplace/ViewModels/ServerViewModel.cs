@@ -74,9 +74,6 @@ public partial class ServerViewModel : ObservableRecipient
     }
 
     [ObservableProperty]
-    public partial double AnimationValue { get; set; } = 0;
-
-    [ObservableProperty]
     public partial string? InstalledVersion
     {
         get;
@@ -108,102 +105,24 @@ public partial class ServerViewModel : ObservableRecipient
         set;
     }
 
-    #region MyRegion
-    private readonly DispatcherTimer _timer;
-    private double _animationStartValue;
-    private double _animationEndValue;
-    private readonly double _animationDuration = 0.4;
-    private DateTime _animationStartTime; // 动画开始时间
-    private double _animationElapsedTime; // 动画已运行的时间 
-    #endregion
 
     public ServerViewModel(IApiService apiService, IScriptMarketplaceService scriptMarketplaceService, IScriptInstaller scriptInstaller)
     {
         ApiService = apiService;
         ScriptInstaller = scriptInstaller;
         ScriptMarketplaceService = scriptMarketplaceService;
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) }; // 60 FPS
-        _timer.Tick += OnAnimationTick;
         _ = InitializeAsync();
     }
 
 
-
+    /// <summary>
+    /// 取得脚本配置文件内容
+    /// </summary>
+    /// <param name="projectInfo"></param>
+    /// <returns></returns>
     public async Task<string> GetConfigContentAsync(ProjectInfo? projectInfo)
     {
-        //_= ScriptInstaller.EditCurrentRunScriptLinux();
         var a = await ScriptMarketplaceService.GetRemoteConfigFileAsync(projectInfo.ProjectConfig);
-//        var a = @"
-//{
-//    //aaa
-//	""type"": ""team"",
-//	""test"": {
-//		""testPage"": ""tools/testing/run-tests.htm"",
-//		""enabled"": true
-//	},
-//    ""search"": {
-//        ""excludeFolders"": [
-//			"".git"",
-//			""node_modules"",
-//			""tools/bin"",
-//			""tools/counts"",
-//			""tools/policheck"",
-//			""tools/tfs_build_extensions"",
-//			""tools/testing/jscoverage"",
-//			""tools/testing/qunit"",
-//			""tools/testing/chutzpah"",
-//			""server.net""
-//        ]
-//    },
-//	""languages"": {
-//		""vs.languages.typescript"": {
-//			""validationSettings"": [{
-//				""scope"":""/"",
-//				""noImplicitAny"":true,
-//				""noLib"":false,
-//				""extraLibs"":[],
-//				""semanticValidation"":true,
-//				""syntaxValidation"":true,
-//				""codeGenTarget"":""ES5"",
-//				""moduleGenTarget"":"""",
-//				""lint"": {
-//                    ""emptyBlocksWithoutComment"": ""warning"",
-//                    ""curlyBracketsMustNotBeOmitted"": ""warning"",
-//                    ""comparisonOperatorsNotStrict"": ""warning"",
-//                    ""missingSemicolon"": ""warning"",
-//                    ""unknownTypeOfResults"": ""warning"",
-//                    ""semicolonsInsteadOfBlocks"": ""warning"",
-//                    ""functionsInsideLoops"": ""warning"",
-//                    ""functionsWithoutReturnType"": ""warning"",
-//                    ""tripleSlashReferenceAlike"": ""warning"",
-//                    ""unusedImports"": ""warning"",
-//                    ""unusedVariables"": ""warning"",
-//                    ""unusedFunctions"": ""warning"",
-//                    ""unusedMembers"": ""warning""
-//                }
-//			}, 
-//			{
-//				""scope"":""/client"",
-//				""baseUrl"":""/client"",
-//				""moduleGenTarget"":""amd""
-//			},
-//			{
-//				""scope"":""/server"",
-//				""moduleGenTarget"":""commonjs""
-//			},
-//			{
-//				""scope"":""/build"",
-//				""moduleGenTarget"":""commonjs""
-//			},
-//			{
-//				""scope"":""/node_modules/nake"",
-//				""moduleGenTarget"":""commonjs""
-//			}],
-//			""allowMultipleWorkers"": true
-//		}
-//	}
-//}
-//";
         return  a;
     }
 
@@ -380,10 +299,6 @@ public partial class ServerViewModel : ObservableRecipient
 
     private async Task InitializeAsync()
     {
-        await GetInstalledServerPlugins();
-        await GetDiskUsagesAsync();
-        await GetFileTypeUsagesAsync();
-
         var latestVersion = await ScriptInstaller.GetLatestDP_SVersionInfo();
         var a = await ScriptInstaller.GetInstalledVersion();
         if (a.ProjectVersion == 0)
@@ -391,7 +306,7 @@ public partial class ServerViewModel : ObservableRecipient
             InstalledVersion = "未安装";
             InstallBtnContent = "一键安装";
         }
-        else if (latestVersion.ProjectVersion>a.ProjectVersion)
+        else if (latestVersion.ProjectVersion > a.ProjectVersion)
         {
             InstallBtnContent = "更新";
             //InstalledVersion = "";
@@ -401,22 +316,16 @@ public partial class ServerViewModel : ObservableRecipient
             InstalledVersion = a.ProjectVersion.ToString();
             InstallBtnContent = "重新安装";
         }
+        await GetInstalledServerPlugins();
+        //await GetDiskUsagesAsync();
+        await GetFileTypeUsagesAsync();
+
+        
     }
 
     [RelayCommand]
     public async Task GetInstalledServerPlugins()
     {
-        var a = new List<ProjectInfo>
-        {
-            new ProjectInfo
-            {
-                ProjectName = "DP_S",
-                ProjectVersion = 1.0f,
-                ProjectAuthor = "DP_S",
-                Status = PluginStatus.LatestVersion
-            }
-        };
-
         var plugins = await ScriptMarketplaceService.GetServerPluginVersion();
         ProjectInfos = [.. plugins];
     }
@@ -424,9 +333,9 @@ public partial class ServerViewModel : ObservableRecipient
     public async Task GetDiskUsagesAsync()
     {
         var diskUsages = await Task.Run(() => ScriptMarketplaceService.GetDiskUsages());
-        FileSystemUsages = new ObservableCollection<FileSystemUsageModel>(diskUsages);
+        FileSystemUsages = diskUsages;
         MainDisks = diskUsages.FirstOrDefault(a => a.FileSystem == "/dev/sda3");
-        StartAnimation(0, MainDisks?.Used ?? 0);
+
     }
 
     public async Task GetFileTypeUsagesAsync()
@@ -438,28 +347,4 @@ public partial class ServerViewModel : ObservableRecipient
         FileTypeUsages_Unkown = fileTypeUsages.FirstOrDefault(a => a.FileType == "未知类型");
     }
 
-    private void StartAnimation(double from, double to)
-    {
-        _animationStartValue = from;
-        _animationEndValue = to;
-        _animationStartTime = DateTime.Now; // 记录开始时间
-        _timer.Start();
-    }
-
-    private void OnAnimationTick(object sender, object e)
-    {
-        _animationElapsedTime = (DateTime.Now - _animationStartTime).TotalSeconds; // 计算已用时间
-
-        if (_animationElapsedTime >= _animationDuration)
-        {
-            AnimationValue = _animationEndValue;
-            _timer.Stop();
-        }
-        else
-        {
-            var progress = _animationElapsedTime / _animationDuration;
-            AnimationValue = _animationStartValue + (progress * (_animationEndValue - _animationStartValue));
-        }
-        Debug.WriteLine($"AnimationValue: {AnimationValue}, ElapsedTime: {_animationElapsedTime}");
-    }
 }

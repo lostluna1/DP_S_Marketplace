@@ -15,46 +15,46 @@
     <Grid x:Name="ContentArea">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="0.05*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <StackPanel Grid.Column="0" Orientation="Horizontal">
-            <InfoBar
-                Title="提示"
-                Width="400"
-                HorizontalAlignment="Left"
-                IsOpen="True"
-                Message="右键点击行可查看/编辑该脚本的配置信息"
-                Severity="Informational" />
-            <TextBlock Margin="16,0,0,0" VerticalAlignment="Center">
-                <Run Text="已安装DP_S版本：" />
-                <Run Text="{x:Bind ViewModel.InstalledVersion, Mode=OneWay}" />
-            </TextBlock>
-        </StackPanel>
 
-        <!--  安装按钮和进度条  -->
-        <StackPanel
+        <InfoBar
+            Title="已安装DP_S版本："
             Grid.Row="0"
-            Grid.Column="1"
-            Margin="10,0,10,0"
-            Orientation="Vertical">
-            <Button
-                Command="{x:Bind ViewModel.DownloadDPSCommand}"
-                Content="{x:Bind ViewModel.InstallBtnContent, Mode=TwoWay}"
-                Style="{StaticResource AccentButtonStyle}" />
-            <ProgressBar
-                Width="200"
-                Margin="0,10,10,10"
-                Visibility="{x:Bind ViewModel.InstallProgressValue, Mode=OneWay, Converter={StaticResource DoubleToVisibilityConverter}}"
-                Value="{x:Bind ViewModel.InstallProgressValue, Mode=TwoWay}" />
-        </StackPanel>
+            Grid.Column="0"
+            HorizontalAlignment="Stretch"
+            IsOpen="True"
+            Message="{x:Bind ViewModel.InstalledVersion, Mode=OneWay}"
+            Severity="Informational">
+            <InfoBar.ActionButton>
+                <HyperlinkButton
+                    HorizontalAlignment="Right"
+                    Command="{x:Bind ViewModel.DownloadDPSCommand}"
+                    Content="{x:Bind ViewModel.InstallBtnContent, Mode=TwoWay}" />
+            </InfoBar.ActionButton>
+            <InfoBar.CloseButtonStyle>
+                <Style TargetType="Button">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Style>
+            </InfoBar.CloseButtonStyle>
+        </InfoBar>
+        <ProgressBar
+            Grid.Row="1"
+            Grid.Column="0"
+            Margin="0,10,10,10"
+            HorizontalAlignment="Stretch"
+            Visibility="{x:Bind ViewModel.InstallProgressValue, Mode=OneWay, Converter={StaticResource DoubleToVisibilityConverter}}"
+            Value="{x:Bind ViewModel.InstallProgressValue, Mode=TwoWay}" />
+
 
         <!--  已安装插件列表  -->
         <Border
-            Grid.Row="1"
+            Grid.Row="2"
             Grid.Column="0"
             Style="{ThemeResource BorderPanel}">
             <table:TableView
@@ -110,7 +110,7 @@
 
         <!--  仪表盘  -->
         <StackPanel
-            Grid.Row="1"
+            Grid.RowSpan="3"
             Grid.Column="1"
             Margin="10,0,0,0"
             Orientation="Vertical"
@@ -135,7 +135,7 @@
                 TickSpacing="10"
                 TickWidth="4"
                 ValueStringFormat="N0"
-                Value="{x:Bind ViewModel.AnimationValue, Mode=TwoWay}" />
+                Value="{x:Bind ViewModel.MainDisks.Used, Converter={StaticResource NullableLongToDoubleConverter}}" />
             <TextBlock HorizontalAlignment="Center">
                 <Run Text="主分区已使用：" />
                 <Run Text="{x:Bind Path=ViewModel.MainDisks.Used, Mode=OneWay}" />
