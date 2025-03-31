@@ -13,18 +13,6 @@ public interface IScriptMarketplaceService
     Task DowloadToLinux(ProjectInfo projectInfo);
 
     /// <summary>
-    /// 获取磁盘使用情况
-    /// </summary>
-    /// <returns></returns>
-    ObservableCollection<FileSystemUsageModel> GetDiskUsages();
-
-    /// <summary>
-    /// 按文件类型获取使用情况
-    /// </summary>
-    /// <returns></returns>
-    List<FileTypeUsage> GetFileTypeUsages();
-
-    /// <summary>
     /// 从Linux服务端获取插件版本信息
     /// </summary>
     /// <returns></returns>
@@ -36,6 +24,37 @@ public interface IScriptMarketplaceService
     /// <param name="projectInfos"></param>
     /// <returns></returns>
     Task<ObservableCollection<ProjectInfo>> GetServerPlugins();
+
+    /// <summary>
+    /// 从Linux获取nut脚本配置
+    /// </summary>
+    /// <param name="remoteFilePath"></param>
+    /// <returns></returns>
     Task<string> GetRemoteConfigFileAsync(string remoteFilePath);
+
+    /// <summary>
+    /// 保存nut脚本配置
+    /// </summary>
+    /// <param name="remoteFilePath"></param>
+    /// <param name="jsonContent"></param>
     void SaveJsonToRemoteFile(string remoteFilePath, string jsonContent);
+
+    /// <summary>
+    /// 卸载插件
+    /// </summary>
+    /// <param name="projectInfo"></param>
+    /// <returns></returns>
+    Task DeleteFromLinux(ProjectInfo projectInfo);
+
+    /// <summary>
+    /// 获取磁盘使用情况
+    /// </summary>
+    /// <returns></returns>
+    Task<ObservableCollection<FileSystemUsageModel>> GetDiskUsagesAsync();
+
+    /// <summary>
+    /// 按文件类型获取使用情况
+    /// </summary>
+    /// <returns></returns>
+    Task<List<FileTypeUsage>> GetFileTypeUsagesAsync();
 }

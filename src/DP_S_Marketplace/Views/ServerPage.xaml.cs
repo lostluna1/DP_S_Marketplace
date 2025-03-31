@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
+using DP_S_Marketplace.Helpers;
 using DP_S_Marketplace.Models;
 using DP_S_Marketplace.ViewModels;
 using Microsoft.UI.Xaml;
@@ -21,7 +22,14 @@ public sealed partial class ServerPage : Page
     {
         ViewModel = App.GetService<ServerViewModel>();
         InitializeComponent();
+        Loaded += ServerPage_Loaded;
     }
+
+    private async void ServerPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InitializeAsync();
+    }
+
     private new void PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
         var stackPanel = sender as StackPanel;
@@ -46,11 +54,17 @@ public sealed partial class ServerPage : Page
         if (ServerTableView.SelectedItem is ProjectInfo selectedItem)
         {
 
-            var rawJson = await ViewModel.GetConfigContentAsync(selectedItem);
+            try
+            {
+                var rawJson = await ViewModel.GetConfigContentAsync(selectedItem);
+                ViewModel.EditConfigFile = rawJson;
+            }
+            catch (Exception ex)
+            {
+                GrowlMsg.Show(ex.Message,false);
+                throw new Exception(ex.Message);
+            }
             
-
-            ViewModel.EditConfigFile = rawJson;
-
             var dialog = new EditConfigDialog(ViewModel)
             {
                 XamlRoot = App.MainWindow.Content.XamlRoot
@@ -69,4 +83,12 @@ public sealed partial class ServerPage : Page
         }
     }
 
+    private async void Button_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.DataContext is ProjectInfo projectInfo)
+        {
+            ViewModel.SlectedProjectInfo = projectInfo;
+        }
+        await ViewModel.DeleteFromLinux();
+    }
 }

@@ -3,12 +3,17 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DP_S_Marketplace.Contracts.Services;
 using DP_S_Marketplace.Models;
+using DP_S_Marketplace.Services;
 using WinRT;
 
 namespace DP_S_Marketplace.ViewModels;
 
 public partial class ScriptMarketplaceViewModel : ObservableRecipient
 {
+    public IScriptInstaller ScriptInstaller
+    {
+        get;
+    }
     public IScriptMarketplaceService ScriptMarketplaceService
     {
         get;
@@ -23,16 +28,21 @@ public partial class ScriptMarketplaceViewModel : ObservableRecipient
         get; set;
     } = new();
 
-    public ScriptMarketplaceViewModel(IScriptMarketplaceService scriptMarketplaceService)
+    public ScriptMarketplaceViewModel(IScriptMarketplaceService scriptMarketplaceService, IScriptInstaller scriptInstaller)
     {
         ScriptMarketplaceService = scriptMarketplaceService;
-        _ = GetServerPlugins();
+        ScriptInstaller = scriptInstaller;
+
     }
 
-
-    [RelayCommand]
     public async Task GetServerPlugins()
     {
+        var a = await ScriptInstaller.GetInstalledVersion();
+        if (a.ProjectVersion==0)
+        {
+            // 未连接服务器
+            return;
+        }
         var pluginsServer = await ScriptMarketplaceService.GetServerPlugins();
         var pluginsInstalled = new ObservableCollection<ProjectInfo>(await ScriptMarketplaceService.GetServerPluginVersion());
 

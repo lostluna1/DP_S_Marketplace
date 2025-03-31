@@ -7,6 +7,7 @@ using DP_S_Marketplace.Core.Helpers;
 using DP_S_Marketplace.Models;
 using Renci.SshNet;
 using System.Text.RegularExpressions;
+using DP_S_Marketplace.Helpers;
 
 namespace DP_S_Marketplace.Services;
 public partial class ScriptInstaller : IScriptInstaller
@@ -64,9 +65,9 @@ public partial class ScriptInstaller : IScriptInstaller
             }
             var scriptLines = fileContent.Split('\n').ToList();
             var sleepRegex = new Regex(@"^\s*sleep\s+\d+\s*$");
-            var ldPreloadRegex = new Regex(@"^\s*LD_PRELOAD\s*=\s*(.*)$", RegexOptions.IgnoreCase);
+            var dfGameRegex = new Regex(@"\./df_game_r");
 
-            for (int i = 0; i < scriptLines.Count; i++)
+            for (int i = 0; i < scriptLines.Count - 1; i++)
             {
                 // 跳过注释行
                 if (scriptLines[i].TrimStart().StartsWith('#'))
@@ -77,41 +78,54 @@ public partial class ScriptInstaller : IScriptInstaller
                 // 若匹配到 sleep 行
                 if (sleepRegex.IsMatch(scriptLines[i]))
                 {
-                    // 如果有下一行，且这一行不以 '#' 开头，才处理
-                    if (i + 1 < scriptLines.Count)
+                    // 查找下一个非注释行
+                    int nextLineIndex = i + 1;
+                    while (nextLineIndex < scriptLines.Count && scriptLines[nextLineIndex].TrimStart().StartsWith('#'))
                     {
-                        var nextLine = scriptLines[i + 1];
-                        if (!nextLine.TrimStart().StartsWith('#'))
-                        {
-                            var ldPreloadFixRegex = new Regex(
-                                @"^\s*LD_PRELOAD\s*=\s*(""(?<sos>[^""]*)""|(?<sos>[^\s]+))\s+(?<cmd>.+)$",
-                                RegexOptions.IgnoreCase
-                            );
-
-                            if (ldPreloadFixRegex.IsMatch(nextLine))
-                            {
-                                var match = ldPreloadFixRegex.Match(nextLine);
-                                var originalSoList = match.Groups["sos"].Value.Trim();
-                                var cmdPart = match.Groups["cmd"].Value.Trim();
-
-                                if (!originalSoList.Contains("/dp_s/lib/libAurora.so"))
-                                {
-                                    originalSoList = "/dp_s/lib/libAurora.so " + originalSoList;
-                                }
-
-                                nextLine = $@"LD_PRELOAD=""{originalSoList}"" {cmdPart}";
-                            }
-                            else
-                            {
-                                nextLine = $@"LD_PRELOAD=""/dp_s/lib/libAurora.so"" {nextLine.Trim()}";
-                            }
-
-                            scriptLines[i + 1] = nextLine;
-                        }
+                        nextLineIndex++;
                     }
+
+                    if (nextLineIndex >= scriptLines.Count)
+                    {
+                        // 已到达文件末尾，停止处理
+                        break;
+                    }
+
+                    var nextLine = scriptLines[nextLineIndex];
+
+                    if (dfGameRegex.IsMatch(nextLine))
+                    {
+                        // 如果下一行包含 ./df_game_r，处理该行
+                        var ldPreloadFixRegex = new Regex(
+                            @"^\s*LD_PRELOAD\s*=\s*(""(?<sos>[^""]*)""|(?<sos>[^\s]+))\s+(?<cmd>.+)$",
+                            RegexOptions.IgnoreCase
+                        );
+
+                        if (ldPreloadFixRegex.IsMatch(nextLine))
+                        {
+                            var match = ldPreloadFixRegex.Match(nextLine);
+                            var originalSoList = match.Groups["sos"].Value.Trim();
+                            var cmdPart = match.Groups["cmd"].Value.Trim();
+
+                            if (!originalSoList.Contains("/dp_s/lib/libAurora.so"))
+                            {
+                                originalSoList = "/dp_s/lib/libAurora.so " + originalSoList;
+                            }
+
+                            nextLine = $@"LD_PRELOAD=""{originalSoList}"" {cmdPart}";
+                        }
+                        else
+                        {
+                            nextLine = $@"LD_PRELOAD=""/dp_s/lib/libAurora.so"" {nextLine.Trim()}";
+                        }
+
+                        // 更新脚本行
+                        scriptLines[nextLineIndex] = nextLine;
+                    }
+                    // 更新 i 的值，跳过已处理的行
+                    i = nextLineIndex - 1;
                 }
             }
-
 
             var newScript = string.Join('\n', scriptLines);
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(newScript));
@@ -131,6 +145,8 @@ public partial class ScriptInstaller : IScriptInstaller
             }
         }
     }
+
+
 
 
     public async Task<DP_SVersion> GetInstalledVersion()
@@ -161,8 +177,16 @@ public partial class ScriptInstaller : IScriptInstaller
             {
                 sftp.Connect();
 
-                // 从用户的 Linux 根目录下载文件
+                // 从用户的 Linux 服务器直接获取版本信息文件
                 var remoteFilePath = $"/{username}/DP-S服务端插件.json";
+
+                if (!sftp.Exists(remoteFilePath))
+                {
+                    Debug.WriteLine($"远程文件不存在：{remoteFilePath}");
+                    return new DP_SVersion();
+                }
+
+                // **下载远程文件到本地**
                 using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
                 {
                     sftp.DownloadFile(remoteFilePath, fileStream);
@@ -196,6 +220,8 @@ public partial class ScriptInstaller : IScriptInstaller
             }
         }
     }
+
+
     public async Task<DP_SVersion> GetLatestDP_SVersionInfo()
     {
         var globalVariables = GlobalVariables.Instance;
@@ -209,9 +235,6 @@ public partial class ScriptInstaller : IScriptInstaller
             return new DP_SVersion();
         }
 
-        var host = connectionInfo.Ip;
-        var username = connectionInfo.User;
-        var password = connectionInfo.Password;
 
         // 定义本地临时文件夹路径
         var tempFolderPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -237,25 +260,25 @@ public partial class ScriptInstaller : IScriptInstaller
             fileContent = await reader.ReadToEndAsync();
             var data = await Json.ToObjectAsync<DP_SVersion>(fileContent);
 
-            // 使用 SFTP 将版本信息文件上传到用户的 Linux 服务器
-            using (var sftp = new SftpClient(host, 22, username, password))
-            {
-                sftp.Connect();
+            //// 使用 SFTP 将版本信息文件上传到用户的 Linux 服务器
+            //using (var sftp = new SftpClient(host, 22, username, password))
+            //{
+            //    sftp.Connect();
 
-                var projectInfoJson = JsonSerializer.Serialize(data, new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // 允许直接输出非 ASCII 字符
-                });
+            //    var projectInfoJson = JsonSerializer.Serialize(data, new JsonSerializerOptions
+            //    {
+            //        WriteIndented = true,
+            //        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // 允许直接输出非 ASCII 字符
+            //    });
 
-                // 将文件上传到用户的 Linux 根目录
-                var projectInfoFilePath = $"/{username}/{data.ProjectName}.json";
+            //    // 将文件上传到用户的 Linux 根目录
+            //    var projectInfoFilePath = $"/{username}/{data.ProjectName}.json";
 
-                using var stream = new MemoryStream(Encoding.UTF8.GetBytes(projectInfoJson));
-                sftp.UploadFile(stream, projectInfoFilePath, true);
+            //    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(projectInfoJson));
+            //    sftp.UploadFile(stream, projectInfoFilePath, true);
 
-                sftp.Disconnect();
-            }
+            //    sftp.Disconnect();
+            //}
 
             return data;
 

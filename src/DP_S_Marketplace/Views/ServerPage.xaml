@@ -35,6 +35,7 @@
                 <HyperlinkButton
                     HorizontalAlignment="Right"
                     Command="{x:Bind ViewModel.DownloadDPSCommand}"
+                    CommandParameter="{x:Bind ViewModel.OperationType, Mode=TwoWay}"
                     Content="{x:Bind ViewModel.InstallBtnContent, Mode=TwoWay}" />
             </InfoBar.ActionButton>
             <InfoBar.CloseButtonStyle>
@@ -61,7 +62,7 @@
                 x:Name="ServerTableView"
                 AutoGenerateColumns="False"
                 IsReadOnly="True"
-                ItemsSource="{x:Bind ViewModel.ProjectInfos}"
+                ItemsSource="{x:Bind ViewModel.ProjectInfos, Mode=TwoWay}"
                 RightTapped="ServerTableView_RightTapped"
                 SelectedItem="{x:Bind ViewModel.SlectedProjectInfo, Mode=TwoWay}"
                 SelectionMode="Single"
@@ -98,6 +99,29 @@
                         Width="*"
                         Binding="{Binding ProjectVersion}"
                         Header="版本号" />
+                    <table:TableViewTemplateColumn Width="auto" Header="">
+                        <table:TableViewTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button
+                                    HorizontalAlignment="Center"
+                                    Click="Button_Click"
+                                    Style="{StaticResource AccentButtonStyle}">
+                                    <StackPanel
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal">
+                                        <SymbolIcon Symbol="Delete" />
+                                        <TextBlock Margin="5,0,0,0" Text="卸载" />
+                                    </StackPanel>
+                                </Button>
+                                <!--<Button
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Click="Button_Click"
+                                    Content="卸载" />-->
+                            </DataTemplate>
+                        </table:TableViewTemplateColumn.CellTemplate>
+                    </table:TableViewTemplateColumn>
                 </table:TableView.Columns>
                 <table:TableView.ContextFlyout>
                     <MenuFlyout>
@@ -135,7 +159,7 @@
                 TickSpacing="10"
                 TickWidth="4"
                 ValueStringFormat="N0"
-                Value="{x:Bind ViewModel.MainDisks.Used, Converter={StaticResource NullableLongToDoubleConverter}}" />
+                Value="{x:Bind ViewModel.MainDisks.Used, Mode=OneWay, Converter={StaticResource NullableLongToDoubleConverter}}" />
             <TextBlock HorizontalAlignment="Center">
                 <Run Text="主分区已使用：" />
                 <Run Text="{x:Bind Path=ViewModel.MainDisks.Used, Mode=OneWay}" />

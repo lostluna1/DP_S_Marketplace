@@ -1,5 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DP_S_Marketplace.Contracts.Services;
@@ -105,13 +108,19 @@ public partial class ServerViewModel : ObservableRecipient
         set;
     }
 
+    [ObservableProperty]
+    public partial string? OperationType
+    {
+        get;
+        set;
+    }
 
     public ServerViewModel(IApiService apiService, IScriptMarketplaceService scriptMarketplaceService, IScriptInstaller scriptInstaller)
     {
         ApiService = apiService;
         ScriptInstaller = scriptInstaller;
         ScriptMarketplaceService = scriptMarketplaceService;
-        _ = InitializeAsync();
+        //_ = InitializeAsync();
     }
 
 
@@ -122,8 +131,18 @@ public partial class ServerViewModel : ObservableRecipient
     /// <returns></returns>
     public async Task<string> GetConfigContentAsync(ProjectInfo? projectInfo)
     {
-        var a = await ScriptMarketplaceService.GetRemoteConfigFileAsync(projectInfo.ProjectConfig);
-        return  a;
+        if (projectInfo is not null && projectInfo.ProjectConfig is not null)
+        {
+            //_= ScriptInstaller.EditCurrentRunScriptLinux();
+            var a = await ScriptMarketplaceService.GetRemoteConfigFileAsync(projectInfo.ProjectConfig);
+            return a;
+        }
+        else
+        {
+            throw new Exception("该插件没有配置信息");
+
+        }
+        //return "";
     }
 
     [RelayCommand]
@@ -170,13 +189,17 @@ public partial class ServerViewModel : ObservableRecipient
         }
     }
 
+    public async Task DeleteFromLinux()
+    {
+        if (SlectedProjectInfo is not null)
+        {
+            await ScriptMarketplaceService.DeleteFromLinux(SlectedProjectInfo);
+            ProjectInfos.Remove(SlectedProjectInfo);
+        }
+    }
 
     [RelayCommand]
-    public async Task DownloadDPS()
-    {
-        await InstallDP_S();
-    }
-    public async Task InstallDP_S()
+    public async Task DownloadDPS(string operationType)
     {
         var globalVariables = GlobalVariables.Instance;
         if (globalVariables.ConnectionInfo == null)
@@ -214,12 +237,17 @@ public partial class ServerViewModel : ObservableRecipient
                 var totalRead = 0;
 
                 using var contentStream = await response.Content.ReadAsStreamAsync();
-                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                while ((bytesRead = await contentStream.ReadAsync(buffer)) > 0)
                 {
                     await fileStream.WriteAsync(buffer, 0, bytesRead);
                     totalRead += bytesRead;
                     Debug.WriteLine($"下载进度: {totalRead}/{totalBytes} ({(totalRead * 100.0 / totalBytes):F2}%)");
                     InstallProgressValue = totalRead * 100.0 / totalBytes;
+                }
+                InstallProgressValue = 100;
+                if (InstallProgressValue==100)
+                {
+                    InstallBtnContent = "重新安装";
                 }
             }
 
@@ -246,8 +274,15 @@ public partial class ServerViewModel : ObservableRecipient
                 var parentDirCommand = sshClient.CreateCommand("dirname /");
                 var parentDir = parentDirCommand.Execute().Trim();
 
+                // 检查并删除已存在的 dp_s 文件夹
+                if (operationType == "下载")
+                {
+                    var removeDpSCommand = sshClient.CreateCommand($"if [ -d \"{parentDir}dp_s\" ]; then sudo rm -rf \"{parentDir}dp_s\"; fi");
+                    removeDpSCommand.Execute(); 
+                }
+
                 // 解压文件到父目录
-                var extractCommand = sshClient.CreateCommand($"sudo tar -xvf /tmp/dp_s.tar -C {parentDir}");
+                var extractCommand = sshClient.CreateCommand($"sudo tar -xvf /tmp/dp_s.tar -C \"{parentDir}\"");
                 var result = extractCommand.Execute();
                 var exitStatus = extractCommand.ExitStatus;
 
@@ -257,7 +292,7 @@ public partial class ServerViewModel : ObservableRecipient
                     Debug.WriteLine($"解压结果:\n{result}");
 
                     // 设置权限，递归修改解压后的文件夹权限为 777
-                    var chmodCommand = sshClient.CreateCommand($"sudo chmod -R 777 {parentDir}dp_s"); // 假设解压后的目录为 dp_s
+                    var chmodCommand = sshClient.CreateCommand($"sudo chmod -R 777 \"{parentDir}dp_s\"");
                     chmodCommand.Execute();
 
                     Debug.WriteLine("权限设置成功");
@@ -277,7 +312,29 @@ public partial class ServerViewModel : ObservableRecipient
             }
 
             DP_SVersion = await ScriptInstaller.GetLatestDP_SVersionInfo();
+            
             InstalledVersion = DP_SVersion.ProjectVersion.ToString();
+
+            // 使用 SFTP 将版本信息文件上传到用户的 Linux 服务器
+            
+                using var sftp1 = new SftpClient(host, 22, username, password);
+                sftp1.Connect();
+
+                var projectInfoJson = System.Text.Json.JsonSerializer.Serialize(DP_SVersion, new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // 允许直接输出非 ASCII 字符
+                });
+
+                // 将文件上传到用户的 Linux 根目录
+                var projectInfoFilePath = $"/{username}/{DP_SVersion.ProjectName}.json";
+
+                using var stream = new MemoryStream(Encoding.UTF8.GetBytes(projectInfoJson));
+                sftp1.UploadFile(stream, projectInfoFilePath, true);
+
+                sftp1.Disconnect();
+            
+
             GrowlMsg.Show($"成功安装DP_S: {InstalledVersion}", true);
             Debug.WriteLine("文件已成功上传并解压到 Linux 服务器。");
         }
@@ -293,11 +350,12 @@ public partial class ServerViewModel : ObservableRecipient
             Directory.Delete(tempFolderPath, true);
         }
 
-        // 关键: 修改run脚本以运行DP_S
+        // 修改 run 脚本以运行 DP_S
         await ScriptInstaller.EditCurrentRunScriptLinux();
     }
 
-    private async Task InitializeAsync()
+
+    public async Task InitializeAsync()
     {
         var latestVersion = await ScriptInstaller.GetLatestDP_SVersionInfo();
         var a = await ScriptInstaller.GetInstalledVersion();
@@ -305,19 +363,22 @@ public partial class ServerViewModel : ObservableRecipient
         {
             InstalledVersion = "未安装";
             InstallBtnContent = "一键安装";
+            OperationType = "下载";
         }
         else if (latestVersion.ProjectVersion > a.ProjectVersion)
         {
             InstallBtnContent = "更新";
+            OperationType = "更新";
             //InstalledVersion = "";
         }
         else
         {
             InstalledVersion = a.ProjectVersion.ToString();
             InstallBtnContent = "重新安装";
+            OperationType = "下载";
         }
         await GetInstalledServerPlugins();
-        //await GetDiskUsagesAsync();
+        await GetDiskUsagesAsync();
         await GetFileTypeUsagesAsync();
 
         
@@ -332,7 +393,7 @@ public partial class ServerViewModel : ObservableRecipient
 
     public async Task GetDiskUsagesAsync()
     {
-        var diskUsages = await Task.Run(() => ScriptMarketplaceService.GetDiskUsages());
+        var diskUsages = await Task.Run(() => ScriptMarketplaceService.GetDiskUsagesAsync());
         FileSystemUsages = diskUsages;
         MainDisks = diskUsages.FirstOrDefault(a => a.FileSystem == "/dev/sda3");
 
@@ -340,7 +401,7 @@ public partial class ServerViewModel : ObservableRecipient
 
     public async Task GetFileTypeUsagesAsync()
     {
-        var fileTypeUsages = await Task.Run(() => ScriptMarketplaceService.GetFileTypeUsages());
+        var fileTypeUsages = await Task.Run(() => ScriptMarketplaceService.GetFileTypeUsagesAsync());
         FileTypeUsages_Documents = fileTypeUsages.FirstOrDefault(a => a.FileType == "文档类型");
         FileTypeUsages_Videos = fileTypeUsages.FirstOrDefault(a => a.FileType == "媒体类型");
         FileTypeUsages_Nut = fileTypeUsages.FirstOrDefault(a => a.FileType == ".nut 文件");
