@@ -1,9 +1,12 @@
 ﻿using System.Text.Json;
+using System.Text.RegularExpressions;
 using DP_S_Marketplace.Models;
 using DP_S_Marketplace.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace DP_S_Marketplace.Views;
 
@@ -44,12 +47,9 @@ public sealed partial class ServerPage : Page
         {
 
             var rawJson = await ViewModel.GetConfigContentAsync(selectedItem);
+            
 
-            // 使用 System.Text.Json 格式化 JSON 字符串
-            var jsonElement = JsonSerializer.Deserialize<JsonElement>(rawJson);
-            var formattedJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions { WriteIndented = true });
-
-            ViewModel.EditConfigFile = formattedJson;
+            ViewModel.EditConfigFile = rawJson;
 
             var dialog = new EditConfigDialog(ViewModel)
             {

@@ -267,7 +267,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         Directory.CreateDirectory(tempFolderPath);
         // 定义远程文件路径
         var remoteProjectDirectory = $"/dp_s/OfficialProject/{projectInfo?.ProjectName}";
-        var remoteConfigDirectory = "/dp_s/OffcialConfig/";
+        var remoteConfigDirectory = "/dp_s/OfficialConfig/";
         try
         {
             // 下载项目文件
@@ -425,7 +425,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                     }
                     else
                     {
-                        GrowlMsg.Show("下载链接无效。", false);
+                        GrowlMsg.Show($"找到没有下载链接的脚本: {item.Name}", false);
                     }
                 }
                 return projectInfos;

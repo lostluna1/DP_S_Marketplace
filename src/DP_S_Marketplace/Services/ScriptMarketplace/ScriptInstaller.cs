@@ -6,10 +6,10 @@ using DP_S_Marketplace.Contracts.Services;
 using DP_S_Marketplace.Core.Helpers;
 using DP_S_Marketplace.Models;
 using Renci.SshNet;
-
+using System.Text.RegularExpressions;
 
 namespace DP_S_Marketplace.Services;
-public class ScriptInstaller : IScriptInstaller
+public partial class ScriptInstaller : IScriptInstaller
 {
     public IApiService ApiService
     {
@@ -19,6 +19,119 @@ public class ScriptInstaller : IScriptInstaller
     {
         ApiService = apiService;
     }
+
+    public async Task EditCurrentRunScriptLinux()
+    {
+        var globalVariables = GlobalVariables.Instance;
+        if (globalVariables.ConnectionInfo == null)
+        {
+            return;
+        }
+
+        var connectionInfo = globalVariables.ConnectionInfo;
+        if (connectionInfo.Ip is null || connectionInfo.User is null || connectionInfo.Password is null)
+        {
+            return;
+        }
+
+        var host = connectionInfo.Ip;
+        var username = connectionInfo.User;
+        var password = connectionInfo.Password;
+
+        var port = 22;
+        var tempFolderPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(tempFolderPath);
+        var tempFilePath = Path.Combine(tempFolderPath, "run");
+
+        try
+        {
+            using var sftp = new SftpClient(host, port, username, password);
+            sftp.Connect();
+
+            var remoteFilePath = $"/{username}/run";
+
+            // 1. 下载
+            using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
+            {
+                sftp.DownloadFile(remoteFilePath, fileStream);
+            }
+
+            // 2. 读取并修改脚本
+            string fileContent;
+            using (var reader = new StreamReader(tempFilePath))
+            {
+                fileContent = await reader.ReadToEndAsync();
+            }
+            var scriptLines = fileContent.Split('\n').ToList();
+            var sleepRegex = new Regex(@"^\s*sleep\s+\d+\s*$");
+            var ldPreloadRegex = new Regex(@"^\s*LD_PRELOAD\s*=\s*(.*)$", RegexOptions.IgnoreCase);
+
+            for (int i = 0; i < scriptLines.Count; i++)
+            {
+                // 跳过注释行
+                if (scriptLines[i].TrimStart().StartsWith('#'))
+                {
+                    continue;
+                }
+
+                // 若匹配到 sleep 行
+                if (sleepRegex.IsMatch(scriptLines[i]))
+                {
+                    // 如果有下一行，且这一行不以 '#' 开头，才处理
+                    if (i + 1 < scriptLines.Count)
+                    {
+                        var nextLine = scriptLines[i + 1];
+                        if (!nextLine.TrimStart().StartsWith('#'))
+                        {
+                            var ldPreloadFixRegex = new Regex(
+                                @"^\s*LD_PRELOAD\s*=\s*(""(?<sos>[^""]*)""|(?<sos>[^\s]+))\s+(?<cmd>.+)$",
+                                RegexOptions.IgnoreCase
+                            );
+
+                            if (ldPreloadFixRegex.IsMatch(nextLine))
+                            {
+                                var match = ldPreloadFixRegex.Match(nextLine);
+                                var originalSoList = match.Groups["sos"].Value.Trim();
+                                var cmdPart = match.Groups["cmd"].Value.Trim();
+
+                                if (!originalSoList.Contains("/dp_s/lib/libAurora.so"))
+                                {
+                                    originalSoList = "/dp_s/lib/libAurora.so " + originalSoList;
+                                }
+
+                                nextLine = $@"LD_PRELOAD=""{originalSoList}"" {cmdPart}";
+                            }
+                            else
+                            {
+                                nextLine = $@"LD_PRELOAD=""/dp_s/lib/libAurora.so"" {nextLine.Trim()}";
+                            }
+
+                            scriptLines[i + 1] = nextLine;
+                        }
+                    }
+                }
+            }
+
+
+            var newScript = string.Join('\n', scriptLines);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(newScript));
+            sftp.UploadFile(stream, remoteFilePath, true);
+
+            sftp.Disconnect();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"发生异常：{ex.Message}");
+        }
+        finally
+        {
+            if (Directory.Exists(tempFolderPath))
+            {
+                Directory.Delete(tempFolderPath, true);
+            }
+        }
+    }
+
 
     public async Task<DP_SVersion> GetInstalledVersion()
     {
@@ -153,7 +266,6 @@ public class ScriptInstaller : IScriptInstaller
         }
         return new DP_SVersion();
     }
-
 
 
 }

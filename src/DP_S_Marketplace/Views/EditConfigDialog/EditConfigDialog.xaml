@@ -9,7 +9,7 @@
     xmlns:local="using:DP_S_Marketplace.Views"
     xmlns:models="using:DP_S_Marketplace.Models"
     Title="编辑脚本配置"
-    Width="600"
+    Width="800"
     Height="400"
     Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}"
     DefaultButton="Primary"
@@ -23,8 +23,9 @@
     <Grid>
         <controls:MonacoEditor
             x:Name="MonacoEditor"
-            Width="500"
-            Height="400"
+            Width="800"
+            Height="300"
+            
             EditorContentChanged="MonacoEditor_EditorContentChanged"
             EditorContextMenuEnabled="True"
             EditorLanguage="json"

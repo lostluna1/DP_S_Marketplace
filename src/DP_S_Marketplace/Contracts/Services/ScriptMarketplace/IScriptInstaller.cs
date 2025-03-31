@@ -15,4 +15,9 @@ public interface IScriptInstaller
     /// <returns></returns>
     Task<DP_SVersion> GetInstalledVersion();
 
+    /// <summary>
+    /// 编辑root/run文件以添加dp-s的so文件声明
+    /// </summary>
+    /// <returns></returns>
+    Task EditCurrentRunScriptLinux();
 }
