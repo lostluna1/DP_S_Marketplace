@@ -57,6 +57,10 @@ public sealed partial class ServerPage : Page
             try
             {
                 var rawJson = await ViewModel.GetConfigContentAsync(selectedItem);
+                if (rawJson is null)
+                {
+                    return;
+                }
                 ViewModel.EditConfigFile = rawJson;
             }
             catch (Exception ex)

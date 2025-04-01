@@ -15,9 +15,24 @@ public class HttpService : IApiService
     {
         _httpClient = httpClient;
         _apiBaseUrl = $"http://103.36.223.176:5244";
-        _= Settoken();
+        //_= Settoken();
     }
-    public async Task Settoken()
+    //public async Task Settoken()
+    //{
+    //    var loginData = new
+    //    {
+    //        username = "Der",
+    //        password = "123456789"
+    //    };
+
+    //    var a = await PostAsync<LoginInfo>("/api/auth/login", loginData);
+    //    if (a.Data != null)
+    //    {
+    //        _token = a.Data.Token;
+    //    }
+
+    //}
+    public async Task InitializeAsync()
     {
         var loginData = new
         {
@@ -30,7 +45,6 @@ public class HttpService : IApiService
         {
             _token = a.Data.Token;
         }
-
     }
     public class LoginInfo
     {

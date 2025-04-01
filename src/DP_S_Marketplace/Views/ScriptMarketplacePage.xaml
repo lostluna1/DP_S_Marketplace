@@ -6,6 +6,7 @@
     xmlns:helpers="using:DP_S_Marketplace.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:table="using:WinUI.TableView"
+    NavigationCacheMode="Enabled"
     mc:Ignorable="d">
     <Page.Resources>
 

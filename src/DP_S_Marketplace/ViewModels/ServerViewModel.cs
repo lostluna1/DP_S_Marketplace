@@ -139,10 +139,10 @@ public partial class ServerViewModel : ObservableRecipient
         }
         else
         {
-            throw new Exception("该插件没有配置信息");
+            //throw new Exception("该插件没有配置信息");
+            return null;
 
         }
-        //return "";
     }
 
     [RelayCommand]

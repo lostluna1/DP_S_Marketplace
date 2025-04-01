@@ -11,4 +11,5 @@ public interface IApiService
     Task<ApiResponse<T>> DeleteAsync<T>(string endpoint, long id, bool requiresToken = false);
     void SetToken(string token);
     Task<string> GetStringAsync(string uri, bool requiresToken = false);
+    Task InitializeAsync();
 }

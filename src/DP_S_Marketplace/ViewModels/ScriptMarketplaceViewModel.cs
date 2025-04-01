@@ -37,37 +37,47 @@ public partial class ScriptMarketplaceViewModel : ObservableRecipient
 
     public async Task GetServerPlugins()
     {
-        var a = await ScriptInstaller.GetInstalledVersion();
-        if (a.ProjectVersion==0)
+        // 将长耗时任务放到后台线程，避免阻塞 UI
+        await Task.Run(async () =>
         {
-            // 未连接服务器
-            return;
-        }
-        var pluginsServer = await ScriptMarketplaceService.GetServerPlugins();
-        var pluginsInstalled = new ObservableCollection<ProjectInfo>(await ScriptMarketplaceService.GetServerPluginVersion());
+            var installedVersion = await ScriptInstaller.GetInstalledVersion().ConfigureAwait(false);
+            if (installedVersion.ProjectVersion == 0)
+            {
+                // 未连接服务器
+                return;
+            }
 
-        foreach (var pluginServer in pluginsServer)
-        {
-            var pluginInstalled = pluginsInstalled.FirstOrDefault(p => p.ProjectName == pluginServer.ProjectName);
-            if (pluginInstalled == null)
-            {
-                // 插件未安装
-                pluginServer.Status = PluginStatus.NotInstalled;
-            }
-            else if (pluginInstalled.ProjectVersion < pluginServer.ProjectVersion)
-            {
-                // 可以更新
-                pluginServer.Status = PluginStatus.CanUpdate;
-            }
-            else
-            {
-                // 已是最新版本
-                pluginServer.Status = PluginStatus.LatestVersion;
-            }
-        }
+            var pluginsServer = await ScriptMarketplaceService.GetServerPlugins().ConfigureAwait(false);
+            var pluginsInstalled = new ObservableCollection<ProjectInfo>(
+            await ScriptMarketplaceService.GetServerPluginVersion().ConfigureAwait(false)
+        );
 
-        ProjectInfos = pluginsServer;
+            // 比对并更新插件状态
+            foreach (var plugin in pluginsServer)
+            {
+                var installedPlugin = pluginsInstalled.FirstOrDefault(p => p.ProjectName == plugin.ProjectName);
+                if (installedPlugin == null)
+                {
+                    plugin.Status = PluginStatus.NotInstalled;
+                }
+                else if (installedPlugin.ProjectVersion < plugin.ProjectVersion)
+                {
+                    plugin.Status = PluginStatus.CanUpdate;
+                }
+                else
+                {
+                    plugin.Status = PluginStatus.LatestVersion;
+                }
+            }
+
+            // 回到 WinUI 3 的 DispatcherQueue 更新 UI（示例用 App.MainWindow）
+            App.MainWindow.DispatcherQueue.TryEnqueue(() =>
+            {
+                ProjectInfos = pluginsServer;
+            });
+        }).ConfigureAwait(false);
     }
+
 
 
 

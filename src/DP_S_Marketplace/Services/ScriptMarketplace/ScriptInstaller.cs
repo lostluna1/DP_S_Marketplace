@@ -156,6 +156,7 @@ public partial class ScriptInstaller : IScriptInstaller
         {
             return new DP_SVersion();
         }
+
         var connectionInfo = globalVariables.ConnectionInfo;
         if (connectionInfo.Ip is null || connectionInfo.User is null || connectionInfo.Password is null)
         {
@@ -173,38 +174,44 @@ public partial class ScriptInstaller : IScriptInstaller
 
         try
         {
-            using (var sftp = new SftpClient(host, 22, username, password))
+            // 将 SFTP 操作放到后台线程中执行，避免在当前线程上阻塞
+            await Task.Run(() =>
             {
+                using var sftp = new SftpClient(host, 22, username, password);
                 sftp.Connect();
 
-                // 从用户的 Linux 服务器直接获取版本信息文件
                 var remoteFilePath = $"/{username}/DP-S服务端插件.json";
 
                 if (!sftp.Exists(remoteFilePath))
                 {
                     Debug.WriteLine($"远程文件不存在：{remoteFilePath}");
-                    return new DP_SVersion();
+                    // 在多线程场景中被迫中止时无法直接返回，只能通过抛异常或设置信号量
+                    throw new FileNotFoundException($"远程文件不存在：{remoteFilePath}");
                 }
 
-                // **下载远程文件到本地**
-                using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
-                {
-                    sftp.DownloadFile(remoteFilePath, fileStream);
-                }
+                // 下载远程文件到本地
+                using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
+                sftp.DownloadFile(remoteFilePath, fileStream);
 
                 sftp.Disconnect();
-            }
+            })
+            .ConfigureAwait(false);
 
-            // 读取文件内容
+            // 异步读取下载后的文件
             string fileContent;
             using (var reader = new StreamReader(tempFilePath))
             {
-                fileContent = await reader.ReadToEndAsync();
+                fileContent = await reader.ReadToEndAsync().ConfigureAwait(false);
             }
 
             // 反序列化为 DP_SVersion 对象
-            var data = await Json.ToObjectAsync<DP_SVersion>(fileContent);
+            var data = await Json.ToObjectAsync<DP_SVersion>(fileContent).ConfigureAwait(false);
             return data;
+        }
+        catch (FileNotFoundException fnfEx)
+        {
+            Debug.WriteLine(fnfEx.Message);
+            return new DP_SVersion();
         }
         catch (Exception ex)
         {
@@ -220,6 +227,7 @@ public partial class ScriptInstaller : IScriptInstaller
             }
         }
     }
+
 
 
     public async Task<DP_SVersion> GetLatestDP_SVersionInfo()
