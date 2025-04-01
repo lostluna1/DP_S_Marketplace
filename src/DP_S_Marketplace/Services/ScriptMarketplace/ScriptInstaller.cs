@@ -67,7 +67,7 @@ public partial class ScriptInstaller : IScriptInstaller
             var sleepRegex = new Regex(@"^\s*sleep\s+\d+\s*$");
             var dfGameRegex = new Regex(@"\./df_game_r");
 
-            for (int i = 0; i < scriptLines.Count - 1; i++)
+            for (var i = 0; i < scriptLines.Count - 1; i++)
             {
                 // 跳过注释行
                 if (scriptLines[i].TrimStart().StartsWith('#'))
@@ -79,7 +79,7 @@ public partial class ScriptInstaller : IScriptInstaller
                 if (sleepRegex.IsMatch(scriptLines[i]))
                 {
                     // 查找下一个非注释行
-                    int nextLineIndex = i + 1;
+                    var nextLineIndex = i + 1;
                     while (nextLineIndex < scriptLines.Count && scriptLines[nextLineIndex].TrimStart().StartsWith('#'))
                     {
                         nextLineIndex++;
@@ -237,65 +237,78 @@ public partial class ScriptInstaller : IScriptInstaller
         {
             return new DP_SVersion();
         }
+
         var connectionInfo = globalVariables.ConnectionInfo;
         if (connectionInfo.Ip is null || connectionInfo.User is null || connectionInfo.Password is null)
         {
             return new DP_SVersion();
         }
 
-
         // 定义本地临时文件夹路径
         var tempFolderPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(tempFolderPath);
-        var DP_SVersionInfoDownloadLink = await ApiService.PostAsync<Data>($"/api/fs/get?path=/Application/Proj.ifo", null, true);
-        var url = DP_SVersionInfoDownloadLink?.Data?.Raw_Url;
-        if (url is not null)
+
+        // 用于在方法结尾返回
+        DP_SVersion resultVersion = new();
+
+        try
         {
-            var tempFilePath = Path.Combine(tempFolderPath, "Proj.ifo");
-            using (var httpClient = new HttpClient())
+            // 将耗时的网络下载与IO操作放到后台线程执行，避免阻塞当前线程
+            await Task.Run(async () =>
             {
-                var response = await httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
+                var DP_SVersionInfoDownloadLink = await ApiService
+                .PostAsync<Data>($"/api/fs/get?path=/Application/Proj.ifo", null, true)
+                .ConfigureAwait(false);
+                var url = DP_SVersionInfoDownloadLink?.Data?.Raw_Url;
 
-                using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
-                await response.Content.CopyToAsync(fileStream);
-            }
+                if (url is not null)
+                {
+                    var tempFilePath = Path.Combine(tempFolderPath, "Proj.ifo");
 
-            // 读取文件内容
-            string fileContent;
+                    // 异步下载文件
+                    using (var httpClient = new HttpClient())
+                    {
+                        var response = await httpClient.GetAsync(url).ConfigureAwait(false);
+                        response.EnsureSuccessStatusCode();
 
-            using var reader = new StreamReader(tempFilePath);
-            fileContent = await reader.ReadToEndAsync();
-            var data = await Json.ToObjectAsync<DP_SVersion>(fileContent);
+                        using var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write);
+                        await response.Content.CopyToAsync(fileStream).ConfigureAwait(false);
+                    }
 
-            //// 使用 SFTP 将版本信息文件上传到用户的 Linux 服务器
-            //using (var sftp = new SftpClient(host, 22, username, password))
-            //{
-            //    sftp.Connect();
+                    // 异步读取下载后的文件
+                    string fileContent;
+                    using (var reader = new StreamReader(tempFilePath))
+                    {
+                        fileContent = await reader.ReadToEndAsync().ConfigureAwait(false);
+                    }
 
-            //    var projectInfoJson = JsonSerializer.Serialize(data, new JsonSerializerOptions
-            //    {
-            //        WriteIndented = true,
-            //        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // 允许直接输出非 ASCII 字符
-            //    });
-
-            //    // 将文件上传到用户的 Linux 根目录
-            //    var projectInfoFilePath = $"/{username}/{data.ProjectName}.json";
-
-            //    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(projectInfoJson));
-            //    sftp.UploadFile(stream, projectInfoFilePath, true);
-
-            //    sftp.Disconnect();
-            //}
-
-            return data;
-
+                    // 反序列化为 DP_SVersion 对象
+                    var data = await Json.ToObjectAsync<DP_SVersion>(fileContent).ConfigureAwait(false);
+                    if (data is not null)
+                    {
+                        resultVersion = data;
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("下载链接无效。");
+                }
+            }).ConfigureAwait(false);
         }
-        else
+        catch (Exception ex)
         {
-            Debug.WriteLine("下载链接无效。");
+            Debug.WriteLine($"发生异常：{ex.Message}");
         }
-        return new DP_SVersion();
+        finally
+        {
+            // 删除本地临时文件夹
+            if (Directory.Exists(tempFolderPath))
+            {
+                Directory.Delete(tempFolderPath, true);
+            }
+        }
+
+        return resultVersion;
     }
 
 

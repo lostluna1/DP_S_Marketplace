@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace DP_S_Marketplace.Converters;
 
-public class NullableLongToDoubleConverter : IValueConverter
+public partial class NullableLongToDoubleConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

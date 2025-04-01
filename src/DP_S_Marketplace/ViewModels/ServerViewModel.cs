@@ -129,7 +129,7 @@ public partial class ServerViewModel : ObservableRecipient
     /// </summary>
     /// <param name="projectInfo"></param>
     /// <returns></returns>
-    public async Task<string> GetConfigContentAsync(ProjectInfo? projectInfo)
+    public async Task<string?> GetConfigContentAsync(ProjectInfo? projectInfo)
     {
         if (projectInfo is not null && projectInfo.ProjectConfig is not null)
         {
@@ -167,7 +167,7 @@ public partial class ServerViewModel : ObservableRecipient
     /// </summary>
     /// <param name="strInput"></param>
     /// <returns></returns>
-    private bool IsValidJson(string strInput)
+    private static bool IsValidJson(string strInput)
     {
         strInput = strInput.Trim();
         if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || // 对象
@@ -239,7 +239,7 @@ public partial class ServerViewModel : ObservableRecipient
                 using var contentStream = await response.Content.ReadAsStreamAsync();
                 while ((bytesRead = await contentStream.ReadAsync(buffer)) > 0)
                 {
-                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
                     totalRead += bytesRead;
                     Debug.WriteLine($"下载进度: {totalRead}/{totalBytes} ({(totalRead * 100.0 / totalBytes):F2}%)");
                     InstallProgressValue = totalRead * 100.0 / totalBytes;

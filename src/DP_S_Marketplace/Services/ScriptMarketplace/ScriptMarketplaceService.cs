@@ -51,12 +51,16 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         {
             throw new InvalidOperationException("连接信息无效");
         }
-
+        var remoteFullPath = $"{ProjectFolderDirectroy.ProjectsConfigDirectory}{remoteFilePath}";
+        var remoteDirectory = Path.GetDirectoryName(remoteFullPath);
+        if (remoteDirectory is null)
+        {
+            return;
+        }
         using var sftp = new SftpClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
         sftp.Connect();
 
-        var remoteFullPath = $"{ProjectFolderDirectroy.ProjectsConfigDirectory}{remoteFilePath}";
-        var remoteDirectory = Path.GetDirectoryName(remoteFullPath);
+        
 
         // 确保远程目录存在
         CreateDirectoryRecursive(sftp, remoteDirectory);
@@ -74,12 +78,12 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         var globalVariables = GlobalVariables.Instance;
         if (globalVariables.ConnectionInfo == null)
         {
-            return new List<FileTypeUsage>();
+            return [];
         }
         var connectionInfo = globalVariables.ConnectionInfo;
         if (string.IsNullOrEmpty(connectionInfo.Ip) || string.IsNullOrEmpty(connectionInfo.User) || string.IsNullOrEmpty(connectionInfo.Password))
         {
-            return new List<FileTypeUsage>();
+            return [];
         }
 
         // 使用 Task.Run 包装同步方法，使其异步执行
@@ -185,12 +189,12 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         var globalVariables = GlobalVariables.Instance;
         if (globalVariables.ConnectionInfo == null)
         {
-            return new ObservableCollection<FileSystemUsageModel>();
+            return [];
         }
         var connectionInfo = globalVariables.ConnectionInfo;
         if (string.IsNullOrEmpty(connectionInfo.Ip) || string.IsNullOrEmpty(connectionInfo.User) || string.IsNullOrEmpty(connectionInfo.Password))
         {
-            return new ObservableCollection<FileSystemUsageModel>();
+            return [];
         }
 
         // 使用 Task.Run 包装同步方法，使其异步执行
@@ -257,7 +261,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         }
 
         // 去掉单位部分，只保留数值部分
-        var numericPart = new string(size.TakeWhile(char.IsDigit).ToArray());
+        var numericPart = new string([.. size.TakeWhile(char.IsDigit)]);
         return long.TryParse(numericPart, out var result) ? result : 0;
     }
 
@@ -265,7 +269,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
     public async Task DeleteFromLinux(ProjectInfo projectInfo)
     {
         var globalVariables = GlobalVariables.Instance;
-        if (globalVariables.ConnectionInfo == null)
+        if (globalVariables.ConnectionInfo == null || projectInfo is null)
         {
             return;
         }
@@ -281,8 +285,8 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         var password = connectionInfo.Password;
 
         // 定义远程项目目录和配置文件路径
-        var remoteProjectDirectory = $"{ProjectFolderDirectroy.ProjectsDirectory}{projectInfo?.ProjectName}";
-        var remoteConfigFilePath = Path.Combine(ProjectFolderDirectroy.ProjectsConfigDirectory, projectInfo?.ProjectConfig ?? string.Empty).Replace("\\", "/");
+        var remoteProjectDirectory = $"{ProjectFolderDirectroy.ProjectsDirectory}{projectInfo.ProjectName}";
+        var remoteConfigFilePath = Path.Combine(ProjectFolderDirectroy.ProjectsConfigDirectory, projectInfo.ProjectConfig ?? string.Empty).Replace("\\", "/");
 
         using var sftp = new SftpClient(host, Port, username, password);
         try
@@ -295,12 +299,12 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                 DeleteDirectory(sftp, remoteProjectDirectory);
                 //sftp.DeleteFile(remoteProjectDirectory);
                 Debug.WriteLine($"已成功删除目录: {remoteProjectDirectory}");
-                GrowlMsg.Show($"已成功删除项目: {projectInfo?.ProjectName}", true);
+                GrowlMsg.Show($"已成功删除项目: {projectInfo.ProjectName}", true);
             }
             else
             {
                 Debug.WriteLine($"目录不存在: {remoteProjectDirectory}");
-                GrowlMsg.Show($"项目目录不存在: {projectInfo?.ProjectName}", false);
+                GrowlMsg.Show($"项目目录不存在: {projectInfo.ProjectName}", false);
             }
 
             // 删除配置文件
@@ -308,12 +312,12 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
             {
                 sftp.DeleteFile(remoteConfigFilePath);
                 Debug.WriteLine($"已成功删除配置文件: {remoteConfigFilePath}");
-                GrowlMsg.Show($"已成功删除配置文件: {projectInfo?.ProjectConfig}", true);
+                GrowlMsg.Show($"已成功删除配置文件: {projectInfo.ProjectConfig}", true);
             }
             else
             {
                 Debug.WriteLine($"配置文件不存在: {remoteConfigFilePath}");
-                GrowlMsg.Show($"配置文件不存在: {projectInfo?.ProjectConfig}", false);
+                GrowlMsg.Show($"配置文件不存在: {projectInfo.ProjectConfig}", false);
             }
 
             // 更新已下载项目的记录
@@ -329,13 +333,15 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
     }
 
     // 递归删除目录及其内容
-    private void DeleteDirectory(SftpClient sftp, string remoteDirectory)
+    private static void DeleteDirectory(SftpClient sftp, string remoteDirectory)
     {
         var files = sftp.ListDirectory(remoteDirectory);
         foreach (var file in files)
         {
-            if (file.Name == "." || file.Name == "..")
+            if (file.Name is "." or "..")
+            {
                 continue;
+            }
 
             var filePath = $"{remoteDirectory}/{file.Name}";
 
@@ -360,7 +366,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         }
 
         // 获取已下载的项目列表
-        List<ProjectInfo> downloadedProjects = new List<ProjectInfo>();
+        var downloadedProjects = new List<ProjectInfo>();
         if (sftp.Exists(ProjectFolderDirectroy.DownloadedProjectsFilePath))
         {
             using var stream = new MemoryStream();
@@ -485,7 +491,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
                 }
 
                 // 将已下载的项目名称存储到 JSON 文件中
-                await SaveDownloadedProjectNames(sftp, new List<ProjectInfo> { projectInfo! });
+                await SaveDownloadedProjectNames(sftp, [projectInfo!]);
 
                 sftp.Disconnect();
             }
@@ -510,7 +516,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
 
     private static void CreateDirectoryRecursive(SftpClient sftp, string path)
     {
-        var parts = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+        var parts = path.Split(['/'], StringSplitOptions.RemoveEmptyEntries);
         var currentPath = "/";
 
         foreach (var part in parts)
@@ -593,30 +599,49 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         {
             return [];
         }
+
         var connectionInfo = globalVariables.ConnectionInfo;
-        if (connectionInfo.Ip is null || connectionInfo.User is null || connectionInfo.Password is null)
+        if (string.IsNullOrEmpty(connectionInfo.Ip) || string.IsNullOrEmpty(connectionInfo.User) || string.IsNullOrEmpty(connectionInfo.Password))
         {
             return [];
         }
-        using var client = new SshClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
-        client.Connect();
 
-        // 检查文件是否存在，存在则读取内容，否则返回空字符串
-        var command = client.CreateCommand($"if [ -f \"{ProjectFolderDirectroy.DownloadedProjectsFilePath}\" ]; then cat \"{ProjectFolderDirectroy.DownloadedProjectsFilePath}\"; else echo ''; fi");
-        var result = command.Execute();
-        client.Disconnect();
-
-        if (string.IsNullOrWhiteSpace(result))
+        var commandResult = string.Empty;
+        try
         {
-            // 文件不存在或内容为空，返回空的 List<ProjectInfo>
+            // 将 SSH 连接和命令执行放到后台线程，避免阻塞
+            commandResult = await Task.Run(() =>
+            {
+                using var client = new SshClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
+                client.Connect();
+
+                // 检查文件是否存在，存在则读取，不存在则返回空
+                var command = client.CreateCommand(
+                $"if [ -f \"{ProjectFolderDirectroy.DownloadedProjectsFilePath}\" ]; then cat \"{ProjectFolderDirectroy.DownloadedProjectsFilePath}\"; else echo ''; fi"
+            );
+                var result = command.Execute();
+
+                client.Disconnect();
+                return result;
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"发生异常：{ex.Message}");
             return [];
         }
-        else
+
+        if (string.IsNullOrWhiteSpace(commandResult))
         {
-            // 文件存在且有内容，反序列化 JSON
-            return await Json.ToObjectAsync<List<ProjectInfo>>(result);
+            // 文件不存在或为空
+            return [];
         }
+
+        // 异步反序列化 JSON
+        var data = await Json.ToObjectAsync<List<ProjectInfo>>(commandResult).ConfigureAwait(false);
+        return data ?? [];
     }
+
 
     /// <summary>
     /// 将下载的项目名称保存到 JSON 文件中
@@ -627,7 +652,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
 
     private static async Task SaveDownloadedProjectNames(SftpClient sftp, IEnumerable<ProjectInfo> projectInfos)
     {
-        if (projectInfos == null || !projectInfos.Any())
+        if (projectInfos == null || !projectInfos.Any() )
         {
             return;
         }
@@ -635,7 +660,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
         var downloadedProjects = new List<ProjectInfo>();
 
         // 确保远程目录存在
-        CreateDirectoryRecursive(sftp, Path.GetDirectoryName(ProjectFolderDirectroy.DownloadedProjectsFilePath));
+        CreateDirectoryRecursive(sftp, Path.GetDirectoryName(ProjectFolderDirectroy.DownloadedProjectsFilePath)!);
 
         if (sftp.Exists(ProjectFolderDirectroy.DownloadedProjectsFilePath))
         {
@@ -644,7 +669,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
             stream.Position = 0;
             using var reader = new StreamReader(stream, Encoding.UTF8);
             var json = await reader.ReadToEndAsync();
-            downloadedProjects = JsonSerializer.Deserialize<List<ProjectInfo>>(json) ?? new List<ProjectInfo>();
+            downloadedProjects = JsonSerializer.Deserialize<List<ProjectInfo>>(json) ?? [];
         }
 
 

@@ -14,7 +14,7 @@ public sealed partial class ConnectionInfoDialog : ContentDialog
     }
     public ConnectionInfoDialog(SettingsViewModel settingsViewModel)
     {
-        this.InitializeComponent();
+        InitializeComponent();
         ViewModel = settingsViewModel;
         DataContext = ViewModel;
     }

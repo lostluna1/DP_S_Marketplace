@@ -61,19 +61,19 @@ public static class SettingsStorageExtensions
 
     public static async Task<StorageFile> SaveFileAsync(this StorageFolder folder, byte[] content, string fileName, CreationCollisionOption options = CreationCollisionOption.ReplaceExisting)
     {
-        if (content == null)
+        if (content != null)
         {
-            throw new ArgumentNullException(nameof(content));
+            if (string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("File name is null or empty. Specify a valid file name", nameof(fileName));
+            }
+
+            var storageFile = await folder.CreateFileAsync(fileName, options);
+            await FileIO.WriteBytesAsync(storageFile, content);
+            return storageFile;
         }
 
-        if (string.IsNullOrEmpty(fileName))
-        {
-            throw new ArgumentException("File name is null or empty. Specify a valid file name", nameof(fileName));
-        }
-
-        var storageFile = await folder.CreateFileAsync(fileName, options);
-        await FileIO.WriteBytesAsync(storageFile, content);
-        return storageFile;
+        throw new ArgumentNullException(nameof(content));
     }
 
     public static async Task<byte[]?> ReadFileAsync(this StorageFolder folder, string fileName)

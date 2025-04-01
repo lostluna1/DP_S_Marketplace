@@ -14,10 +14,16 @@ namespace DP_S_Marketplace.ViewModels;
 public partial class ShellViewModel : ObservableRecipient
 {
     [ObservableProperty]
-    private bool isBackEnabled;
+    public partial bool IsBackEnabled
+    {
+    get; set;
+    }
 
     [ObservableProperty]
-    private object? selected;
+    public partial object? Selected
+    {
+        get;set;
+    }
 
     public INavigationService NavigationService
     {

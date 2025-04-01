@@ -20,7 +20,7 @@ public static class ConnectionHelper
         var json = await FileIO.ReadTextAsync(file);
         if (!string.IsNullOrEmpty(json))
         {
-            connections = JsonSerializer.Deserialize<ObservableCollection<ConnectionInfo>>(json) ?? new ObservableCollection<ConnectionInfo>();
+            connections = JsonSerializer.Deserialize<ObservableCollection<ConnectionInfo>>(json) ?? [];
         }
         return connections;
     }
@@ -45,13 +45,13 @@ public static class ConnectionHelper
         var connections = await LoadConnectionsAsync();
 
         // 遍历连接列表，将所有连接的 IsSelected 设置为 false
-        foreach (ConnectionInfo conn in connections)
+        foreach (var conn in connections)
         {
             conn.IsSelected = false;
         }
 
         // 查找并设置新的默认连接
-        ConnectionInfo? selectedConnection = connections.FirstOrDefault(c => c.Name == connection.Name);
+        var selectedConnection = connections.FirstOrDefault(c => c.Name == connection.Name);
 
         if (selectedConnection != null)
         {

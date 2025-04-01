@@ -46,7 +46,7 @@ public sealed partial class ShellPage : Page
         KeyboardAccelerators.Add(BuildKeyboardAccelerator(VirtualKey.Left, VirtualKeyModifiers.Menu));
         KeyboardAccelerators.Add(BuildKeyboardAccelerator(VirtualKey.GoBack));
 
-        ObservableCollection<ConnectionInfo> connections = await ConnectionHelper.LoadConnectionsAsync();
+        var connections = await ConnectionHelper.LoadConnectionsAsync();
         // 直接更新 ViewModel
         ViewModel.Connections = connections ?? [];
         if (connections?.Count == 0)

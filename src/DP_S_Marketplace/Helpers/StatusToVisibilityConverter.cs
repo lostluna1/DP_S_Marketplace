@@ -2,7 +2,7 @@ using DP_S_Marketplace.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 namespace DP_S_Marketplace.Helpers;
-public class StatusToVisibilityConverter : IValueConverter
+public partial class StatusToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

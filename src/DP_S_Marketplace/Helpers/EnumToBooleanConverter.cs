@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace DP_S_Marketplace.Helpers;
 
-public class EnumToBooleanConverter : IValueConverter
+public partial class EnumToBooleanConverter : IValueConverter
 {
     public EnumToBooleanConverter()
     {

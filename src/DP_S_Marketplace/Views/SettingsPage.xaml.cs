@@ -39,7 +39,7 @@ public sealed partial class SettingsPage : Page
     {
         if (sender is ListView listView)
         {
-            if ((e.OriginalSource as FrameworkElement)?.DataContext is ConnectionInfo clickedItem)
+            if (e.OriginalSource is FrameworkElement { DataContext: ConnectionInfo clickedItem })
             {
                 listView.SelectedItem = clickedItem;
             }
