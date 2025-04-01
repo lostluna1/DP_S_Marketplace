@@ -9,7 +9,6 @@
     xmlns:local="using:DP_S_Marketplace.Views"
     xmlns:models="using:DP_S_Marketplace.Models"
     Title="编辑脚本配置"
-    Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}"
     DefaultButton="Primary"
     PrimaryButtonCommand="{x:Bind ViewModel.SaveConfigFileCommand}"
     PrimaryButtonText="确定"
@@ -20,10 +19,10 @@
     </ContentDialog.Resources>
     <Grid Width="500" Height="400">
         <controls:MonacoEditor
-            HorizontalAlignment="Left"
             x:Name="MonacoEditor"
-            Width="600"
+            Width="500"
             Height="400"
+            HorizontalAlignment="Left"
             EditorContentChanged="MonacoEditor_EditorContentChanged"
             EditorContextMenuEnabled="True"
             EditorLanguage="json"
