@@ -652,7 +652,7 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
 
     private static async Task SaveDownloadedProjectNames(SftpClient sftp, IEnumerable<ProjectInfo> projectInfos)
     {
-        if (projectInfos == null || !projectInfos.Any() )
+        if (projectInfos == null || projectInfos?.Count()<=0 )
         {
             return;
         }

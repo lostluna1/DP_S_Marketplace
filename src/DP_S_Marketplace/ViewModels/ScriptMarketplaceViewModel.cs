@@ -3,8 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DP_S_Marketplace.Contracts.Services;
 using DP_S_Marketplace.Models;
-using DP_S_Marketplace.Services;
-using WinRT;
 
 namespace DP_S_Marketplace.ViewModels;
 
@@ -60,13 +58,9 @@ public partial class ScriptMarketplaceViewModel : ObservableRecipient
                 {
                     plugin.Status = PluginStatus.NotInstalled;
                 }
-                else if (installedPlugin.ProjectVersion < plugin.ProjectVersion)
-                {
-                    plugin.Status = PluginStatus.CanUpdate;
-                }
                 else
                 {
-                    plugin.Status = PluginStatus.LatestVersion;
+                    plugin.Status = installedPlugin.ProjectVersion < plugin.ProjectVersion ? PluginStatus.CanUpdate : PluginStatus.LatestVersion;
                 }
             }
 
