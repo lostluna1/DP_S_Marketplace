@@ -61,7 +61,6 @@ public sealed partial class ServerPage : Page
                     XamlRoot = App.MainWindow.Content.XamlRoot
                 };
 
-                await dialog.ShowAsync();
 
                 var rawJson = await ViewModel.GetConfigContentAsync(selectedItem);
                 if (rawJson is null)
@@ -69,6 +68,8 @@ public sealed partial class ServerPage : Page
                     return;
                 }
                 ViewModel.EditConfigFile = rawJson;
+                await dialog.ShowAsync();
+
             }
             catch (Exception ex)
             {
