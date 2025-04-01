@@ -18,11 +18,11 @@ internal partial class TitleBarHelper
     private const int WAACTIVE = 0x01;
     private const int WMACTIVATE = 0x0006;
 
-    [LibraryImport("user32.dll")]
-    private static partial IntPtr GetActiveWindow();
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetActiveWindow();
 
-    [LibraryImport("user32.dll")]
-    private static partial IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
 
     public static void UpdateTitleBar(ElementTheme theme)
     {
