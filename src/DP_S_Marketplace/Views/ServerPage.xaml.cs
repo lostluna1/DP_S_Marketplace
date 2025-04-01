@@ -56,6 +56,13 @@ public sealed partial class ServerPage : Page
 
             try
             {
+                var dialog = new EditConfigDialog(ViewModel)
+                {
+                    XamlRoot = App.MainWindow.Content.XamlRoot
+                };
+
+                await dialog.ShowAsync();
+
                 var rawJson = await ViewModel.GetConfigContentAsync(selectedItem);
                 if (rawJson is null)
                 {
@@ -69,12 +76,7 @@ public sealed partial class ServerPage : Page
                 throw new Exception(ex.Message);
             }
             
-            var dialog = new EditConfigDialog(ViewModel)
-            {
-                XamlRoot = App.MainWindow.Content.XamlRoot
-            };
-
-            await dialog.ShowAsync();
+            
 
         }
 

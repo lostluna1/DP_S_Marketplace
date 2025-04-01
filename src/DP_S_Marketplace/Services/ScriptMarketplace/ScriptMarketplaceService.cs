@@ -25,24 +25,29 @@ public class ScriptMarketplaceService(IApiService apiService) : IScriptMarketpla
     {
         var globalVariables = GlobalVariables.Instance;
         var connectionInfo = globalVariables.ConnectionInfo;
-        if (connectionInfo == null || string.IsNullOrEmpty(connectionInfo.Ip) || string.IsNullOrEmpty(connectionInfo.User) || string.IsNullOrEmpty(connectionInfo.Password))
+        if (connectionInfo == null
+            || string.IsNullOrEmpty(connectionInfo.Ip)
+            || string.IsNullOrEmpty(connectionInfo.User)
+            || string.IsNullOrEmpty(connectionInfo.Password))
         {
             return "连接信息无效";
         }
 
-        using var sftp = new SftpClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
-        sftp.Connect();
+        // 将静态同步操作放到后台线程，避免阻塞主线程
+        return await Task.Run(() =>
+        {
+            using var sftp = new SftpClient(connectionInfo.Ip, Port, connectionInfo.User, connectionInfo.Password);
+            sftp.Connect();
 
-        // 打开远程文件的读取流
-        using var readStream = sftp.OpenRead($"{ProjectFolderDirectroy.ProjectsConfigDirectory}{remoteFilePath}");
-        using var reader = new StreamReader(readStream);
-        // 读取文件内容
-        var fileContent = await reader.ReadToEndAsync();
-        sftp.Disconnect();
+            using var readStream = sftp.OpenRead($"{ProjectFolderDirectroy.ProjectsConfigDirectory}{remoteFilePath}");
+            using var reader = new StreamReader(readStream);
+            var fileContent = reader.ReadToEnd();
 
-        return fileContent;
-
+            sftp.Disconnect();
+            return fileContent;
+        }).ConfigureAwait(false);
     }
+
     public void SaveJsonToRemoteFile(string remoteFilePath, string jsonContent)
     {
         var globalVariables = GlobalVariables.Instance;
